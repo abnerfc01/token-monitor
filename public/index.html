@@ -1,0 +1,318 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AIOX Token Monitor - Custos & Consumo</title>
+  <!-- Google Fonts: Outfit and Inter -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <!-- Chart.js from CDN -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <!-- CSS Stylesheet -->
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div class="app-container">
+    
+    <!-- Sidebar Navigation -->
+    <aside class="app-sidebar">
+      <div class="sidebar-header">
+        <div class="logo-icon">⚡</div>
+        <div class="logo-text">
+          <h1>TokenMonitor</h1>
+          <span>AIOX Project Costs</span>
+        </div>
+      </div>
+      <nav class="sidebar-nav">
+        <button class="nav-btn active" id="btn-dashboard" onclick="switchTab('dashboard')">
+          <span class="nav-icon">📊</span> Painel Geral
+        </button>
+        <button class="nav-btn" id="btn-projects" onclick="switchTab('projects')">
+          <span class="nav-icon">📁</span> Projetos Cadastrados
+        </button>
+        <button class="nav-btn" id="btn-prices" onclick="switchTab('prices')">
+          <span class="nav-icon">💰</span> Configurar Preços
+        </button>
+        <button class="nav-btn" id="btn-history" onclick="switchTab('history')">
+          <span class="nav-icon">📜</span> Histórico de Uso
+        </button>
+      </nav>
+      <div class="sidebar-footer">
+        <div class="wsl-badge">WSL / Linux Active</div>
+      </div>
+    </aside>
+
+    <!-- Main Content Area -->
+    <main class="app-main">
+      
+      <!-- Top Bar -->
+      <header class="app-header">
+        <div class="header-title">
+          <h2 id="current-tab-title">Painel Geral</h2>
+          <p id="current-tab-desc">Visão em tempo real do consumo de tokens e custos de desenvolvimento.</p>
+        </div>
+        <div class="header-actions">
+          <button class="btn btn-primary btn-refresh" id="refresh-data-btn" onclick="fetchData()">
+            <span class="btn-icon">🔄</span> Atualizar Dados
+          </button>
+        </div>
+      </header>
+
+      <!-- Loading overlay -->
+      <div id="loading-overlay" class="loading-overlay hidden">
+        <div class="spinner"></div>
+        <p>Buscando estatísticas nos bancos de dados do AIOX...</p>
+      </div>
+
+      <!-- Tab Content: Dashboard -->
+      <section id="tab-dashboard" class="tab-content active">
+        <!-- KPI Cards Grid -->
+        <div class="kpi-grid">
+          <div class="kpi-card glass">
+            <div class="kpi-icon icon-cost">💵</div>
+            <div class="kpi-info">
+              <span class="kpi-label">Custo Estimado Total</span>
+              <h3 class="kpi-value" id="kpi-total-cost">$0.00</h3>
+              <span class="kpi-subtext" id="kpi-cost-subtext">0 interações</span>
+            </div>
+          </div>
+          <div class="kpi-card glass">
+            <div class="kpi-icon icon-tokens">🪙</div>
+            <div class="kpi-info">
+              <span class="kpi-label">Tokens de Entrada</span>
+              <h3 class="kpi-value" id="kpi-input-tokens">0</h3>
+              <span class="kpi-subtext" id="kpi-input-subtext">Novos inputs</span>
+            </div>
+          </div>
+          <div class="kpi-card glass">
+            <div class="kpi-icon icon-cache">📥</div>
+            <div class="kpi-info">
+              <span class="kpi-label">Tokens em Cache (Hit)</span>
+              <h3 class="kpi-value" id="kpi-cached-tokens">0</h3>
+              <span class="kpi-subtext" id="kpi-cached-subtext">Economia de ~75%</span>
+            </div>
+          </div>
+          <div class="kpi-card glass">
+            <div class="kpi-icon icon-output">📤</div>
+            <div class="kpi-info">
+              <span class="kpi-label">Tokens de Saída</span>
+              <h3 class="kpi-value" id="kpi-output-tokens">0</h3>
+              <span class="kpi-subtext" id="kpi-output-subtext">Conteúdo gerado</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Charts Grid -->
+        <div class="charts-grid">
+          <div class="chart-container glass">
+            <h3>Distribuição de Custos por Projeto</h3>
+            <div class="chart-wrapper">
+              <canvas id="cost-by-project-chart"></canvas>
+            </div>
+          </div>
+          <div class="chart-container glass">
+            <h3>Consumo de Tokens por Modelo</h3>
+            <div class="chart-wrapper">
+              <canvas id="tokens-by-model-chart"></canvas>
+            </div>
+          </div>
+        </div>
+
+        <!-- Unregistered Projects Notice (Dynamic) -->
+        <div id="unregistered-notice-box" class="notice-box glass hidden">
+          <div class="notice-icon">⚠️</div>
+          <div class="notice-content">
+            <h4>Workspaces Não Cadastrados Detectados</h4>
+            <p>Foram encontradas conversações ativas em diretórios locais que não estão associados a nenhum projeto cadastrado. Cadastre-os para rastrear os custos individualmente.</p>
+            <div class="notice-actions" id="unregistered-links-list">
+              <!-- Dynamically populated -->
+            </div>
+          </div>
+        </div>
+
+        <!-- Projects Summary Table -->
+        <div class="table-container glass">
+          <h3>Detalhamento por Projeto</h3>
+          <table class="data-table" id="projects-summary-table">
+            <thead>
+              <tr>
+                <th>Projeto</th>
+                <th>Caminho Local</th>
+                <th>Nº Conversas</th>
+                <th>Tokens Entrada</th>
+                <th>Tokens Cache</th>
+                <th>Tokens Saída</th>
+                <th>Custo Estimado</th>
+              </tr>
+            </thead>
+            <tbody>
+              <!-- Dynamic Rows -->
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <!-- Tab Content: Projects Manager -->
+      <section id="tab-projects" class="tab-content">
+        <div class="grid-two-cols">
+          <!-- Register new project Form -->
+          <div class="form-container glass">
+            <h3>Cadastrar Novo Projeto</h3>
+            <form id="new-project-form" onsubmit="registerProject(event)">
+              <div class="form-group">
+                <label for="project-name">Nome do Projeto</label>
+                <input type="text" id="project-name" required placeholder="Ex: Meu App Web, API de Vendas">
+              </div>
+              <div class="form-group">
+                <label for="project-path">Caminho da Pasta / Repositório Local (WSL)</label>
+                <input type="text" id="project-path" required placeholder="Ex: /home/user/src/meu-app">
+                <small class="input-tip">Certifique-se de usar o caminho absoluto do Linux dentro do WSL.</small>
+              </div>
+              <button type="submit" class="btn btn-primary" id="save-project-btn">Cadastrar Projeto</button>
+            </form>
+          </div>
+
+          <!-- Existing projects list -->
+          <div class="list-container glass">
+            <h3>Projetos Monitorados</h3>
+            <div class="projects-list-scroll">
+              <ul class="projects-list" id="registered-projects-list">
+                <!-- Dynamic List Items -->
+              </ul>
+            </div>
+          </div>
+        </div>
+
+        <!-- Scanned local workspace options -->
+        <div class="workspace-scanner-section glass">
+          <h3>Sugestões de Cadastro (Diretórios com Atividade AIOX)</h3>
+          <p class="section-desc">Essas pastas têm arquivos de histórico de conversação do AIOX. Clique em cadastrar para associar um nome amigável a elas.</p>
+          <div class="scanner-grid" id="scanner-suggestions-grid">
+            <!-- Dynamic elements -->
+          </div>
+        </div>
+      </section>
+
+      <!-- Tab Content: Cost Configuration -->
+      <section id="tab-prices" class="tab-content">
+        <div class="form-container glass full-width">
+          <h3>Preços dos Modelos por Milhão de Tokens (USD)</h3>
+          <p class="section-desc">Defina as tarifas de cada modelo de IA para calcular os custos corretos. Os valores padrão foram preenchidos.</p>
+          
+          <form id="prices-form" onsubmit="savePrices(event)">
+            <div class="prices-table-wrapper">
+              <table class="data-table" id="prices-edit-table">
+                <thead>
+                  <tr>
+                    <th>Nome do Modelo</th>
+                    <th>Entrada (por 1M tokens)</th>
+                    <th>Entrada em Cache / Hit (por 1M tokens)</th>
+                    <th>Saída (por 1M tokens)</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <!-- Dynamic Rows -->
+                </tbody>
+              </table>
+            </div>
+            <div class="form-actions">
+              <button type="submit" class="btn btn-primary" id="save-prices-btn">Salvar Alterações de Preço</button>
+              <button type="button" class="btn btn-secondary" onclick="resetPricesToDefault()">Restaurar Valores Padrão</button>
+            </div>
+          </form>
+        </div>
+      </section>
+
+      <!-- Tab Content: History -->
+      <section id="tab-history" class="tab-content">
+        <div class="table-container glass full-width">
+          <div class="table-header-filters">
+            <h3>Histórico de Conversas e Interações</h3>
+            <div class="filter-group">
+              <label for="filter-project">Projeto:</label>
+              <select id="filter-project" onchange="applyFilters()">
+                <option value="all">Todos</option>
+              </select>
+            </div>
+          </div>
+          
+          <table class="data-table" id="history-table">
+            <thead>
+              <tr>
+                <th>ID da Conversa</th>
+                <th>Projeto Associado</th>
+                <th>Última Modificação</th>
+                <th>Nº Passos (Steps)</th>
+                <th>Tokens Entrada</th>
+                <th>Tokens Cache</th>
+                <th>Tokens Saída</th>
+                <th>Custo Total</th>
+                <th>Ações</th>
+              </tr>
+            </thead>
+            <tbody>
+              <!-- Dynamic Rows -->
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+    </main>
+  </div>
+
+  <!-- Conversation Detail Modal -->
+  <div id="conv-modal" class="modal hidden">
+    <div class="modal-content glass">
+      <div class="modal-header">
+        <h3 id="modal-title">Detalhes da Conversa</h3>
+        <button class="modal-close" onclick="closeModal()">✕</button>
+      </div>
+      <div class="modal-body">
+        <div class="modal-summary-grid">
+          <div class="summary-metric">
+            <span class="metric-label">Custo</span>
+            <span class="metric-val" id="modal-cost">$0.000</span>
+          </div>
+          <div class="summary-metric">
+            <span class="metric-label">Entrada</span>
+            <span class="metric-val" id="modal-input">0</span>
+          </div>
+          <div class="summary-metric">
+            <span class="metric-label">Cache</span>
+            <span class="metric-val" id="modal-cached">0</span>
+          </div>
+          <div class="summary-metric">
+            <span class="metric-label">Saída</span>
+            <span class="metric-val" id="modal-output">0</span>
+          </div>
+        </div>
+        
+        <h4>Passos da Geração (Steps)</h4>
+        <div class="modal-steps-list-wrapper">
+          <table class="data-table" id="modal-steps-table">
+            <thead>
+              <tr>
+                <th>Passo</th>
+                <th>Modelo</th>
+                <th>Tokens Entrada</th>
+                <th>Tokens Cache</th>
+                <th>Tokens Saída</th>
+                <th>Custo Estimado</th>
+                <th>Horário</th>
+              </tr>
+            </thead>
+            <tbody>
+              <!-- Dynamic Rows -->
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Javascript Logic -->
+  <script src="app.js"></script>
+</body>
+</html>
