@@ -21,7 +21,7 @@ Desenvolvemos uma aplicação open-source em Node.js (Express) com frontend em H
 
 ## Como Funciona a Extração de Dados
 
-O AIOX grava o histórico das suas conversas e execuções em bancos de dados SQLite individuais no diretório `/home/abnerfc01/.gemini/antigravity-cli/conversations/`. 
+O AIOX grava o histórico das suas conversas e execuções em bancos de dados SQLite individuais no diretório `~/.gemini/antigravity-cli/conversations/`. 
 
 ```mermaid
 graph TD
@@ -59,7 +59,7 @@ O servidor já está sendo executado em segundo plano e você pode abri-lo diret
 * **Tabela Geral**: Um detalhamento consolidado com o total de tokens e custos de cada pasta ativa.
 
 ### 2. Mapeamento Inteligente de Projetos
-* Você pode cadastrar o nome e o caminho absoluto da pasta local (ex: `/home/abnerfc01/src/resumeai`).
+* Você pode cadastrar o nome e o caminho absoluto da pasta local (ex: `/home/<user>/src/resumeai` ou `~/src/resumeai`).
 * **Sugestões de Cadastro**: O painel classifica e exibe na parte inferior da página uma lista de pastas ativas não cadastradas. Basta clicar no botão **"Mapear como Projeto"** para cadastrar essa pasta rapidamente.
 
 ### 3. Configuração de Tarifas de Preço

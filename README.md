@@ -24,12 +24,12 @@ Um painel web moderno de código aberto (*open-source*) com visual *glassmorphic
 
 ## 📁 Estrutura de Arquivos
 
-* [server.js](file:///home/abnerfc01/src/token-monitor/server.js): Servidor REST backend em Node.js (Express).
-* [db_reader.py](file:///home/abnerfc01/src/token-monitor/db_reader.py): Script em Python estruturado em **Adaptadores** para decodificar Protobuf e extrair estatísticas de várias IAs.
-* [package.json](file:///home/abnerfc01/src/token-monitor/package.json): Dependências do projeto e scripts npm.
-* [public/](file:///home/abnerfc01/src/token-monitor/public/): Frontend da aplicação (HTML, CSS e JavaScript).
-* [docs/manual.md](file:///home/abnerfc01/src/token-monitor/docs/manual.md): Manual detalhado de implantação, funcionamento e guia explicativo da interface web.
-* [docs/guide.md](file:///home/abnerfc01/src/token-monitor/docs/guide.md): Guia técnico explicando o banco de dados interno e regras de agregação.
+* [server.js](server.js): Servidor REST backend em Node.js (Express).
+* [db_reader.py](db_reader.py): Script em Python estruturado em **Adaptadores** para decodificar Protobuf e extrair estatísticas de várias IAs.
+* [package.json](package.json): Dependências do projeto e scripts npm.
+* [public/](public/): Frontend da aplicação (HTML, CSS e JavaScript).
+* [docs/manual.md](docs/manual.md): Manual detalhado de implantação, funcionamento e guia explicativo da interface web.
+* [docs/guide.md](docs/guide.md): Guia técnico explicando o banco de dados interno e regras de agregação.
 
 ---
 
@@ -38,7 +38,7 @@ Um painel web moderno de código aberto (*open-source*) com visual *glassmorphic
 ### 1. Instalação e Configuração Automática
 Navegue até a pasta do projeto, instale as dependências e execute o script de configuração:
 ```bash
-cd /home/abnerfc01/src/token-monitor
+cd ~/src/token-monitor
 npm install
 npm run setup
 ```
@@ -68,7 +68,7 @@ Com o serviço rodando, abra o navegador no Windows e acesse:
 ### 1. Cadastro e Mapeamento de Projetos
 Para agrupar o consumo de tokens corretamente, o monitor associa o histórico das conversas às pastas dos seus projetos locais.
 1. Vá até a aba **Projetos Cadastrados** na barra lateral.
-2. Informe o **Nome do Projeto** (ex: `Prima Invest`) e o **Caminho absoluto no WSL** (ex: `/home/abnerfc01/src/prisma_invest`).
+2. Informe o **Nome do Projeto** (ex: `Prima Invest`) e o **Caminho absoluto no WSL** (ex: `/home/<user>/src/prisma_invest` ou `~/src/prisma_invest`).
 3. **Mapeamento Automático (Sugestões)**: O monitor analisa seu histórico de conversas com IA e exibe pastas ativas não cadastradas na parte inferior da página. Basta clicar em **"Mapear como Projeto"** ao lado de qualquer pasta sugerida para registrá-la instantaneamente.
 
 ### 2. Dashboard e Filtros

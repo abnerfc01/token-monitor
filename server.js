@@ -176,7 +176,7 @@ app.get('/api/usage', (req, res) => {
       }
       
       // We will match dbStats workspaces with configured projects.
-      // A dbStat workspace has URI format: "file:///home/abnerfc01/src/resumeai"
+      // A dbStat workspace has URI format: "file:///home/<user>/src/resumeai"
       // We will match it if the workspace path starts with the project path.
       
       const usageByProject = {};

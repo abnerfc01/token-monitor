@@ -18,7 +18,7 @@ Siga as etapas abaixo no terminal do seu WSL para colocar o projeto para funcion
 ### Passo 1.1: Instalar as Dependências
 Navegue até a pasta do projeto e instale as dependências:
 ```bash
-cd /home/abnerfc01/src/token-monitor
+cd ~/src/token-monitor
 npm install
 ```
 
@@ -41,7 +41,7 @@ O PM2 é um gerenciador de processos leve para Node.js que reinicia o app automa
    ```
 2. Inicie a aplicação com o PM2 a partir da pasta do projeto:
    ```bash
-   cd /home/abnerfc01/src/token-monitor
+   cd ~/src/token-monitor
    pm2 start server.js --name "token-monitor"
    ```
 3. Salve a lista de processos para persistir:
@@ -56,7 +56,7 @@ O PM2 é um gerenciador de processos leve para Node.js que reinicia o app automa
 #### Opção B: Usando o utilitário nohup (Nativo do Linux)
 Caso não queira instalar o PM2, use o `nohup` do Linux:
 ```bash
-nohup node /home/abnerfc01/src/token-monitor/server.js > /home/abnerfc01/src/token-monitor/server.log 2>&1 &
+nohup node server.js > server.log 2>&1 &
 ```
 Isso iniciará o servidor e redirecionará a saída de logs para o arquivo `server.log`.
 
@@ -71,16 +71,16 @@ Com o servidor rodando, abra o navegador no Windows e acesse:
 > Caso a porta não seja redirecionada automaticamente pelo WSL (ou você queira acessar de outro local na rede), você pode descobrir o IP do seu WSL rodando `ip addr show eth0 | grep inet` no terminal do WSL, ou simplesmente verificando o log de inicialização do servidor, que imprimirá os endereços de acesso, como por exemplo `http://172.x.x.x:3030`.
 
 > [!NOTE]
-> Por padrão, o monitor vasculha os arquivos de banco de dados SQLite gerados pelo AIOX no caminho `/home/abnerfc01/.gemini/antigravity-cli/conversations/`. Ele não altera nem apaga nenhuma das suas conversas originais.
+> Por padrão, o monitor vasculha os arquivos de banco de dados SQLite gerados pelo AIOX no caminho `~/.gemini/antigravity-cli/conversations/`. Ele não altera nem apaga nenhuma das suas conversas originais.
 
 ### 2.1 Mapeamento e Cadastro de Projetos
-Quando o AIOX é executado, ele armazena o histórico da conversa vinculada à pasta onde você abriu o terminal (ex: `file:///home/abnerfc01/src/resumeai`).
+Quando o AIOX é executado, ele armazena o histórico da conversa vinculada à pasta onde você abriu o terminal (ex: `file:///home/<user>/src/resumeai` ou `~/src/resumeai`).
 
 Para mapear esses logs para projetos legíveis:
 1. Vá para a aba **Projetos Cadastrados** na barra lateral.
 2. No formulário de cadastro, informe:
    * **Nome do Projeto**: Ex: `Resume AI`
-   * **Caminho Local (WSL)**: Ex: `/home/abnerfc01/src/resumeai`
+   * **Caminho Local (WSL)**: Ex: `/home/<user>/src/resumeai` ou `~/src/resumeai`
 3. Clique em **Cadastrar Projeto**.
 4. **Mapeamento Automático (Sugestões)**: O sistema escaneia o histórico do AIOX e exibe na parte inferior da página uma lista de pastas ativas não cadastradas. Basta clicar no botão **"Mapear como Projeto"** para cadastrar essa pasta rapidamente.
 
