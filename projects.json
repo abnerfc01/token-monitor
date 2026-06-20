@@ -28,5 +28,11 @@
     "name": "abnerfc01",
     "path": "/home/abnerfc01",
     "createdAt": "2026-06-20T04:40:17.204Z"
+  },
+  {
+    "id": "1781978317044",
+    "name": "Prima Invest",
+    "path": "/home/abnerfc01/src/prisma_invest",
+    "createdAt": "2026-06-20T17:58:37.044Z"
   }
 ]

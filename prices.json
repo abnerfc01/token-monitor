@@ -38,5 +38,10 @@
     "input": 0.5,
     "output": 0.5,
     "cached": 0
+  },
+  "gemini-3.1-pro-low": {
+    "input": 0,
+    "output": 0,
+    "cached": 0
   }
 }
