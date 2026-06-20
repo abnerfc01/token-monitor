@@ -1,6 +1,12 @@
 # WSL Token Monitor
 
-Um painel web moderno com visual *glassmorphic* e tema escuro projetado especificamente para ambientes WSL / Linux, permitindo escanear os históricos locais de diferentes assistentes de IA (CLI e IDE) e consolidar o consumo de tokens e a estimativa de custos financeiros agrupados por projeto de software.
+Um painel web moderno com visual *glassmorphic* e tema escuro projetado especificamente para rodar em ambientes WSL / Linux. O monitor escaneia de forma agregada os históricos locais de diferentes assistentes de IA (como CLI e IDE), consolidando o consumo de tokens e a estimativa de custos financeiros por projeto de software.
+
+---
+
+## 📸 Interface do Sistema
+
+![Dashboard Preview](docs/images/dashboard_preview.jpg)
 
 ---
 
@@ -57,11 +63,38 @@ Com o serviço rodando, abra o navegador no Windows e acesse:
 
 ---
 
+## 📖 Manual de Uso da Interface
+
+### 1. Cadastro e Mapeamento de Projetos
+Para agrupar o consumo de tokens corretamente, o monitor associa o histórico das conversas às pastas dos seus projetos locais.
+1. Vá até a aba **Projetos Cadastrados** na barra lateral.
+2. Informe o **Nome do Projeto** (ex: `Prima Invest`) e o **Caminho absoluto no WSL** (ex: `/home/abnerfc01/src/prisma_invest`).
+3. **Mapeamento Automático (Sugestões)**: O monitor analisa seu histórico de conversas com IA e exibe pastas ativas não cadastradas na parte inferior da página. Basta clicar em **"Mapear como Projeto"** ao lado de qualquer pasta sugerida para registrá-la instantaneamente.
+
+### 2. Dashboard e Filtros
+A aba **Dashboard** apresenta resumos gerais:
+* **Filtros Globais**: Na parte superior, você pode selecionar múltiplos projetos e modelos de IA para filtrar todos os custos e gráficos de forma síncrona.
+* **Gráfico de Custos**: Exibe a fatia financeira que cada projeto representa no seu consumo total.
+* **Gráfico de Barras**: Detalha os tokens de Entrada, Saída e Cache Hit utilizados por modelo de IA.
+
+### 3. Ajuste de Tarifas Financeiras (Configurar Preços)
+Na aba **Configurar Preços**, você pode editar a tarifa cobrada por milhão (1M) de tokens em dólares (USD) para cada modelo:
+* Edite os campos numéricos de entrada, saída ou cache de qualquer modelo mapeado e clique em **Salvar Alterações de Preço**. Os custos anteriores serão recalculados dinamicamente com base nas novas regras.
+* Clique em **Restaurar Valores Padrão** se desejar voltar aos preços oficiais de tabela (provedores como Anthropic e Google Gemini).
+
+### 4. Histórico Detalhado
+Na aba **Histórico de Uso**:
+1. Veja todas as conversas registradas no sistema organizadas por data de última modificação.
+2. Use o filtro de busca rápida para localizar conversas.
+3. Clique em **🔍 Detalhes** de qualquer conversa para abrir um painel flutuante que exibe a listagem completa de todas as interações daquela conversa, incluindo o modelo, tokens consumidos e o custo estimado de cada passo individual.
+
+---
+
 ## 💻 Suporte a Múltiplas Máquinas e Usuários
 
-* **Caminhos Dinâmicos**: O monitor utiliza expansão dinâmica de caminhos (`~`) para resolver a pasta home de qualquer usuário no Linux/WSL, permitindo que a aplicação seja instalada e funcione em qualquer ambiente sem necessidade de alterar o código-fonte.
-* **Consolidação de Múltiplos WSLs / Computadores**: Você pode copiar bancos de dados `.db` de conversas do AIOX/Antigravity de outras máquinas para uma pasta sincronizada e mapeá-la na variável `ADDITIONAL_CONVERSATIONS_DIRS` no seu `.env`. O monitor agrupará tudo no mesmo painel.
-* **Fuzzy Matching por Nome do Projeto (Basename)**: Se o caminho absoluto de um projeto diferir entre duas máquinas (ex: `/home/user1/src/meu-app` vs `/home/user2/projetos/meu-app`), o monitor usará o nome da pasta final (`meu-app`) como fallback de correspondência automática.
+* **Caminhos Dinâmicos**: O monitor utiliza expansão dinâmica de caminhos (`~`) para resolver a pasta home de qualquer usuário no Linux/WSL.
+* **Consolidação de Múltiplos WSLs / Computadores**: Copie os bancos de dados `.db` das conversas do AIOX/Antigravity de outros computadores para uma pasta local e insira o caminho na variável `ADDITIONAL_CONVERSATIONS_DIRS` do seu `.env`.
+* **Fuzzy Matching por Nome do Projeto (Basename)**: Se o caminho do projeto mudar entre diferentes máquinas (ex: `/home/user1/src/meu-app` e `/Users/user2/meu-app`), o monitor usará o nome da pasta final (`meu-app`) para agrupar as estatísticas automaticamente.
 
 ---
 
@@ -69,8 +102,8 @@ Com o serviço rodando, abra o navegador no Windows e acesse:
 
 Use os seguintes comandos no terminal do WSL para controlar o monitor de tokens:
 
-* **Verificar o status**: `systemctl --user status token-monitor`
+* **Status do serviço**: `systemctl --user status token-monitor`
 * **Parar o serviço**: `systemctl --user stop token-monitor`
-* **Reiniciar o serviço (útil após alterar o .env)**: `systemctl --user restart token-monitor`
+* **Reiniciar o serviço**: `systemctl --user restart token-monitor`
 * **Ver logs em tempo real**: `journalctl --user -u token-monitor -f`
 * **Desativar a inicialização automática no boot**: `systemctl --user disable token-monitor`
