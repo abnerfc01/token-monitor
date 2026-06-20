@@ -6,7 +6,7 @@ Um painel web moderno de código aberto (*open-source*) com visual *glassmorphic
 
 ## 📸 Interface do Sistema
 
-![Dashboard Preview](docs/images/dashboard_preview.jpg)
+![Dashboard Preview](docs/images/dashboard_preview.png)
 
 ---
 
