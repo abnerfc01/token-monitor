@@ -5,6 +5,29 @@ import json
 import os
 import sys
 
+# Load environment variables from .env file if it exists
+def load_env():
+    env_path = os.path.join(os.path.dirname(__file__), '.env')
+    if os.path.exists(env_path):
+        try:
+            with open(env_path, 'r', encoding='utf-8') as f:
+                for line in f:
+                    line = line.strip()
+                    if not line or line.startswith('#'):
+                        continue
+                    parts = line.split('=', 1)
+                    if len(parts) == 2:
+                        key = parts[0].strip()
+                        val = parts[1].strip()
+                        if (val.startswith('"') and val.endswith('"')) or (val.startswith("'") and val.endswith("'")):
+                            val = val[1:-1]
+                        os.environ[key] = val
+        except Exception as e:
+            sys.stderr.write(f"Warning: Failed to load .env file: {str(e)}\n")
+
+# Load environment configuration
+load_env()
+
 # Protobuf decoding helpers (used for Antigravity)
 def decode_varint(data, pos):
     val = 0
@@ -75,10 +98,20 @@ class AntigravityAdapter(BaseAdapter):
     """
     def __init__(self):
         super().__init__("Antigravity / AIOX")
+        home_dir = os.path.expanduser('~')
         self.conversations_dirs = [
-            '/home/abnerfc01/.gemini/antigravity-cli/conversations',
-            '/home/abnerfc01/.gemini/antigravity-ide/conversations'
+            os.path.join(home_dir, '.gemini/antigravity-cli/conversations'),
+            os.path.join(home_dir, '.gemini/antigravity-ide/conversations')
         ]
+        
+        # Add support for custom/additional conversation directories (e.g. from other machines)
+        additional_dirs = os.environ.get('ADDITIONAL_CONVERSATIONS_DIRS', '')
+        if additional_dirs:
+            for d in additional_dirs.split(','):
+                d = d.strip()
+                if d:
+                    expanded_path = os.path.expanduser(os.path.expandvars(d))
+                    self.conversations_dirs.append(expanded_path)
 
     def get_stats(self):
         results = []
@@ -87,7 +120,14 @@ class AntigravityAdapter(BaseAdapter):
             if os.path.exists(c_dir):
                 db_paths.extend(glob.glob(os.path.join(c_dir, '*.db')))
                 
+        # Use set to avoid processing duplicate databases if folders overlap
+        processed_paths = set()
         for path in db_paths:
+            abs_path = os.path.abspath(path)
+            if abs_path in processed_paths:
+                continue
+            processed_paths.add(abs_path)
+            
             db_id = os.path.basename(path).replace('.db', '')
             try:
                 conn = sqlite3.connect(path)
@@ -103,7 +143,8 @@ class AntigravityAdapter(BaseAdapter):
                         workspace = uris[0].decode('ascii')
                 
                 if not workspace:
-                    workspace = "file:///home/abnerfc01"
+                    home_dir = os.path.expanduser('~')
+                    workspace = f"file://{home_dir}"
                     
                 start_time = int(os.path.getmtime(path))
                 try:
@@ -170,8 +211,15 @@ class AntigravityAdapter(BaseAdapter):
                 file_size = os.path.getsize(path)
                 last_modified = int(os.path.getmtime(path))
                 
+                # Check machine origin (useful when database files are copied from other machines)
+                # We can tag the conversation_id with the database origin directory name if it represents another machine
+                dir_name = os.path.basename(os.path.dirname(path))
+                machine_prefix = ""
+                if dir_name not in ('conversations', 'cli', 'ide'):
+                    machine_prefix = f"{dir_name}-"
+
                 results.append({
-                    "conversation_id": db_id,
+                    "conversation_id": f"{machine_prefix}{db_id}",
                     "workspace": workspace,
                     "start_time": start_time,
                     "last_modified": last_modified,
@@ -190,14 +238,14 @@ class AntigravityAdapter(BaseAdapter):
 class ClaudeCodeAdapter(BaseAdapter):
     """
     Adapter for Anthropic's Claude Code CLI.
-    Claude Code stores config/history inside ~/.config/claude-code/ or ~/.claude/
     """
     def __init__(self):
         super().__init__("Claude Code")
+        home_dir = os.path.expanduser('~')
         self.search_paths = [
-            '/home/abnerfc01/.config/claude-code',
-            '/home/abnerfc01/.claude-code',
-            '/home/abnerfc01/.claude/sessions'
+            os.path.join(home_dir, '.config/claude-code'),
+            os.path.join(home_dir, '.claude-code'),
+            os.path.join(home_dir, '.claude/sessions')
         ]
 
     def get_stats(self):
@@ -206,14 +254,12 @@ class ClaudeCodeAdapter(BaseAdapter):
             if not os.path.exists(base_path):
                 continue
             
-            # Simple placeholder scanner for Claude Code session JSONs
             json_files = glob.glob(os.path.join(base_path, '*.json'))
             for f in json_files:
                 try:
                     with open(f, 'r', encoding='utf-8') as file_obj:
                         data = json.load(file_obj)
                         if isinstance(data, dict) and "history" in data:
-                            # Parse model tokens if present in history
                             pass
                 except Exception as e:
                     sys.stderr.write(f"Error parsing Claude Code JSON {f}: {str(e)}\n")
@@ -223,15 +269,23 @@ class ClaudeCodeAdapter(BaseAdapter):
 class AiderAdapter(BaseAdapter):
     """
     Adapter for Aider CLI.
-    Aider writes a local `.aider.chat.history.md` or `.aider.conf` in the project root.
     """
     def __init__(self):
         super().__init__("Aider CLI")
-        self.search_pattern = '/home/abnerfc01/src/**/.aider.chat.history.md'
+        home_dir = os.path.expanduser('~')
+        # Load PROJECTS_ROOT from environment variable or default to ~/src
+        projects_root = os.environ.get('PROJECTS_ROOT', os.path.join(home_dir, 'src'))
+        projects_root = os.path.expanduser(os.path.expandvars(projects_root))
+        self.search_pattern = os.path.join(projects_root, '**/.aider.chat.history.md')
 
     def get_stats(self):
         results = []
-        files = glob.glob(self.search_pattern, recursive=True)
+        try:
+            files = glob.glob(self.search_pattern, recursive=True)
+        except Exception as e:
+            sys.stderr.write(f"AiderAdapter: failed to scan directory: {str(e)}\n")
+            return results
+            
         for f in files:
             try:
                 workspace_path = os.path.dirname(f)
@@ -245,7 +299,6 @@ class AiderAdapter(BaseAdapter):
                 turns = content.split('####')
                 steps_count = max(0, len(turns) - 1)
                 
-                # Estimate tokens based on characters
                 char_count = len(content)
                 estimated_tokens = char_count // 4
                 

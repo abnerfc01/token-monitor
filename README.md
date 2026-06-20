@@ -29,26 +29,24 @@ Um painel web moderno com visual *glassmorphic* e tema escuro projetado especifi
 
 ## 🛠️ Como Iniciar e Configurar
 
-### 1. Instalar as Dependências
-Navegue até a pasta do projeto e instale as dependências do Node.js:
+### 1. Instalação e Configuração Automática
+Navegue até a pasta do projeto, instale as dependências e execute o script de configuração:
 ```bash
 cd /home/abnerfc01/src/token-monitor
 npm install
+npm run setup
 ```
+O comando `npm run setup` irá:
+* Detectar o diretório de instalação e o executável do Node.js de forma dinâmica.
+* Gerar e registrar o serviço `token-monitor.service` no `systemd` do usuário.
+* Criar uma cópia do arquivo `.env` para você personalizar caso necessário.
+* Iniciar o serviço em segundo plano habilitado para boot automático.
 
-### 2. Inicializar o Serviço de Monitoramento
-O monitor está configurado para rodar sob o gerenciador de serviços do Linux (`systemd`) no escopo do usuário. 
-
-* Para iniciar o monitor agora:
-  ```bash
-  systemctl --user start token-monitor
-  ```
-* Para verificar se o serviço está ativo e rodando sem erros:
-  ```bash
-  systemctl --user status token-monitor
-  ```
-
-*O serviço está habilitado para inicializar automaticamente sempre que o WSL/Linux for iniciado.*
+### 2. Configurações Avançadas (.env)
+Você pode personalizar o comportamento do monitor no arquivo `.env` gerado no diretório raiz:
+* `PORT`: Altera a porta do servidor web (Padrão: `3030`).
+* `PROJECTS_ROOT`: Caminho base para buscar projetos do Aider CLI (Padrão: `~/src`).
+* `ADDITIONAL_CONVERSATIONS_DIRS`: Lista de pastas separadas por vírgula contendo históricos (`.db`) de outras máquinas (ex: diretórios sincronizados via Dropbox, OneDrive ou mounts de rede).
 
 ---
 
@@ -57,7 +55,13 @@ O monitor está configurado para rodar sob o gerenciador de serviços do Linux (
 Com o serviço rodando, abra o navegador no Windows e acesse:
 👉 **[http://localhost:3030](http://localhost:3030)**
 
-*Caso o redirecionamento automático do WSL apresente problemas, consulte o IP do seu WSL no status do serviço e acesse através do IP, ex: `http://172.x.x.x:3030`.*
+---
+
+## 💻 Suporte a Múltiplas Máquinas e Usuários
+
+* **Caminhos Dinâmicos**: O monitor utiliza expansão dinâmica de caminhos (`~`) para resolver a pasta home de qualquer usuário no Linux/WSL, permitindo que a aplicação seja instalada e funcione em qualquer ambiente sem necessidade de alterar o código-fonte.
+* **Consolidação de Múltiplos WSLs / Computadores**: Você pode copiar bancos de dados `.db` de conversas do AIOX/Antigravity de outras máquinas para uma pasta sincronizada e mapeá-la na variável `ADDITIONAL_CONVERSATIONS_DIRS` no seu `.env`. O monitor agrupará tudo no mesmo painel.
+* **Fuzzy Matching por Nome do Projeto (Basename)**: Se o caminho absoluto de um projeto diferir entre duas máquinas (ex: `/home/user1/src/meu-app` vs `/home/user2/projetos/meu-app`), o monitor usará o nome da pasta final (`meu-app`) como fallback de correspondência automática.
 
 ---
 
@@ -65,7 +69,8 @@ Com o serviço rodando, abra o navegador no Windows e acesse:
 
 Use os seguintes comandos no terminal do WSL para controlar o monitor de tokens:
 
+* **Verificar o status**: `systemctl --user status token-monitor`
 * **Parar o serviço**: `systemctl --user stop token-monitor`
-* **Reiniciar o serviço (útil após alterações)**: `systemctl --user restart token-monitor`
+* **Reiniciar o serviço (útil após alterar o .env)**: `systemctl --user restart token-monitor`
 * **Ver logs em tempo real**: `journalctl --user -u token-monitor -f`
 * **Desativar a inicialização automática no boot**: `systemctl --user disable token-monitor`

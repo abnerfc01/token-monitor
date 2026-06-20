@@ -3,6 +3,29 @@ const fs = require('fs');
 const path = require('path');
 const { exec } = require('child_process');
 
+// Load environment variables from .env file if it exists
+const dotenvPath = path.join(__dirname, '.env');
+if (fs.existsSync(dotenvPath)) {
+  try {
+    const envContent = fs.readFileSync(dotenvPath, 'utf-8');
+    envContent.split('\n').forEach(line => {
+      const trimmed = line.trim();
+      if (!trimmed || trimmed.startsWith('#')) return;
+      const parts = trimmed.split('=');
+      if (parts.length >= 2) {
+        const key = parts[0].trim();
+        let val = parts.slice(1).join('=').trim();
+        if ((val.startsWith('"') && val.endsWith('"')) || (val.startsWith("'") && val.endsWith("'"))) {
+          val = val.slice(1, -1);
+        }
+        process.env[key] = val;
+      }
+    });
+  } catch (err) {
+    console.error('Warning: Failed to load .env file:', err);
+  }
+}
+
 const app = express();
 const PORT = process.env.PORT || 3030;
 
@@ -214,6 +237,22 @@ app.get('/api/usage', (req, res) => {
             }
           });
         });
+
+        // Fallback: If no exact match is found, try matching by base folder name (basename)
+        // to support multi-machine setups where absolute paths differ.
+        if (!matchedProjectId) {
+          projects.forEach(p => {
+            const projectBasename = path.basename(p.path).toLowerCase();
+            if (projectBasename) {
+              candidatePaths.forEach(cPath => {
+                const candidateBasename = path.basename(cPath).toLowerCase();
+                if (candidateBasename === projectBasename) {
+                  matchedProjectId = p.id;
+                }
+              });
+            }
+          });
+        }
 
         const targetKey = matchedProjectId || otherKey;
         if (!matchedProjectId) {
