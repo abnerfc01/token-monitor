@@ -135,6 +135,23 @@ app.get('/api/usage', (req, res) => {
     try {
       const dbStats = JSON.parse(stdout);
       
+      // Auto-discover and register new models in prices.json
+      let pricesUpdated = false;
+      dbStats.forEach(conv => {
+        if (conv.generations && Array.isArray(conv.generations)) {
+          conv.generations.forEach(gen => {
+            const modelName = gen.model;
+            if (modelName && !prices[modelName]) {
+              prices[modelName] = { input: 0.0, output: 0.0, cached: 0.0 };
+              pricesUpdated = true;
+            }
+          });
+        }
+      });
+      if (pricesUpdated) {
+        writeJSON(PRICES_FILE, prices);
+      }
+      
       // We will match dbStats workspaces with configured projects.
       // A dbStat workspace has URI format: "file:///home/abnerfc01/src/resumeai"
       // We will match it if the workspace path starts with the project path.
@@ -178,15 +195,24 @@ app.get('/api/usage', (req, res) => {
 
         // Find best match (longest matching project path)
         let bestMatchLength = -1;
+
+        // Build list of candidate paths from workspace and referenced paths
+        const candidatePaths = [convWorkspacePath];
+        if (conv.referenced_paths && Array.isArray(conv.referenced_paths)) {
+          conv.referenced_paths.forEach(refPath => {
+            candidatePaths.push(refPath);
+          });
+        }
+
         projects.forEach(p => {
-          // If conversation workspace path starts with project path
-          // e.g., /home/abnerfc01/src/resumeai starts with /home/abnerfc01/src/resumeai
-          if (convWorkspacePath === p.path || convWorkspacePath.startsWith(p.path + '/')) {
-            if (p.path.length > bestMatchLength) {
-              bestMatchLength = p.path.length;
-              matchedProjectId = p.id;
+          candidatePaths.forEach(cPath => {
+            if (cPath === p.path || cPath.startsWith(p.path + '/')) {
+              if (p.path.length > bestMatchLength) {
+                bestMatchLength = p.path.length;
+                matchedProjectId = p.id;
+              }
             }
-          }
+          });
         });
 
         const targetKey = matchedProjectId || otherKey;

@@ -134,6 +134,24 @@ def get_db_stats():
                     # Skip corrupted generation rows
                     pass
             
+            # Scan steps to find referenced paths under /home/ using tool call keys
+            referenced_paths = set()
+            try:
+                cursor.execute('SELECT step_payload, metadata FROM steps')
+                for payload, metadata in cursor.fetchall():
+                    for blob in (payload, metadata):
+                        if blob:
+                            matches = re.findall(rb'"(?:Cwd|TargetFile|AbsolutePath|Target|DirectoryPath)"\s*:\s*"([^"]+)"', blob)
+                            for m in matches:
+                                try:
+                                    path_str = m.decode('utf-8', errors='ignore')
+                                    if path_str.startswith('/home/') and len(path_str) > 14:
+                                        referenced_paths.add(path_str)
+                                except Exception:
+                                    pass
+            except Exception:
+                pass
+
             # File metadata
             file_size = os.path.getsize(path)
             last_modified = int(os.path.getmtime(path))
@@ -145,7 +163,8 @@ def get_db_stats():
                 "last_modified": last_modified,
                 "file_size": file_size,
                 "generations": generations,
-                "steps_count": len(generations)
+                "steps_count": len(generations),
+                "referenced_paths": list(referenced_paths)
             })
             
             conn.close()

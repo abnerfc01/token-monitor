@@ -104,6 +104,40 @@
           </div>
         </div>
 
+        <!-- Global Dashboard Filters -->
+        <div class="dashboard-filters glass" style="margin-bottom: 24px; padding: 20px 24px;">
+          <h4 style="margin-bottom: 12px; font-family: var(--font-title); font-size: 14px; text-transform: uppercase; letter-spacing: 0.5px; color: var(--text-muted);">
+            Filtros Globais do Painel
+          </h4>
+          <div class="filters-row" style="display: flex; gap: 24px; flex-wrap: wrap; align-items: flex-start;">
+            
+            <!-- Project Filter -->
+            <div class="filter-group project-multiselect" style="flex: 1; min-width: 280px; display: flex; flex-direction: column; align-items: flex-start; gap: 6px; max-width: none;">
+              <span style="font-size:13px; color:var(--text-muted); font-weight:500;">Mapear por Projetos:</span>
+              <div class="multiselect-container" style="width: 100%;">
+                <div class="selected-tags" id="project-tags-container"></div>
+                <div class="autocomplete-wrapper">
+                  <input type="text" id="project-autocomplete-input" placeholder="Pesquisar projetos..." onfocus="showProjectSuggestions()" oninput="filterProjectSuggestions()" onblur="hideProjectSuggestionsDelayed()">
+                  <div class="suggestions-dropdown hidden" id="project-suggestions-dropdown"></div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Model Filter -->
+            <div class="filter-group model-multiselect" style="flex: 1; min-width: 280px; display: flex; flex-direction: column; align-items: flex-start; gap: 6px; max-width: none;">
+              <span style="font-size:13px; color:var(--text-muted); font-weight:500;">Filtrar por Modelos:</span>
+              <div class="multiselect-container" style="width: 100%;">
+                <div class="selected-tags" id="model-tags-container"></div>
+                <div class="autocomplete-wrapper">
+                  <input type="text" id="model-autocomplete-input" placeholder="Pesquisar modelos..." onfocus="showModelSuggestions()" oninput="filterModelSuggestions()" onblur="hideModelSuggestionsDelayed()">
+                  <div class="suggestions-dropdown hidden" id="model-suggestions-dropdown"></div>
+                </div>
+              </div>
+            </div>
+
+          </div>
+        </div>
+
         <!-- Charts Grid -->
         <div class="charts-grid">
           <div class="chart-container glass">
@@ -116,6 +150,43 @@
             <h3>Consumo de Tokens por Modelo</h3>
             <div class="chart-wrapper">
               <canvas id="tokens-by-model-chart"></canvas>
+            </div>
+          </div>
+          <div class="chart-container glass full-width">
+            <div class="chart-header-filters">
+              <h3>Consumo de Tokens ao Longo do Tempo</h3>
+              <div class="filters-row">
+                <!-- Grouping Timeframe -->
+                <div class="filter-group">
+                  <label for="timeframe-select">Agrupamento:</label>
+                  <select id="timeframe-select" onchange="updateTimeSeriesChart()">
+                    <option value="hour">Últimas 24 Horas</option>
+                    <option value="day" selected>Últimos 30 Dias</option>
+                    <option value="week">Últimas 12 Semanas</option>
+                    <option value="month">Últimos 12 Meses</option>
+                  </select>
+                </div>
+                
+                <!-- Token Type Checkboxes -->
+                <div class="filter-group token-toggles">
+                  <span class="filter-group-label" style="font-size:13px; color:var(--text-muted); font-weight:500;">Exibir:</span>
+                  <label class="toggle-checkbox">
+                    <input type="checkbox" id="toggle-input-tokens" checked onchange="updateTimeSeriesChart()">
+                    <span class="checkbox-custom"></span> Entrada
+                  </label>
+                  <label class="toggle-checkbox">
+                    <input type="checkbox" id="toggle-cached-tokens" checked onchange="updateTimeSeriesChart()">
+                    <span class="checkbox-custom"></span> Cache Hit
+                  </label>
+                  <label class="toggle-checkbox">
+                    <input type="checkbox" id="toggle-output-tokens" checked onchange="updateTimeSeriesChart()">
+                    <span class="checkbox-custom"></span> Saída
+                  </label>
+                </div>
+              </div>
+            </div>
+            <div class="chart-wrapper">
+              <canvas id="time-series-chart"></canvas>
             </div>
           </div>
         </div>
@@ -140,6 +211,7 @@
               <tr>
                 <th>Projeto</th>
                 <th>Caminho Local</th>
+                <th>Modelos Utilizados</th>
                 <th>Nº Conversas</th>
                 <th>Tokens Entrada</th>
                 <th>Tokens Cache</th>
