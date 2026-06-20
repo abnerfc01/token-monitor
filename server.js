@@ -256,6 +256,24 @@ app.get('/api/usage', (req, res) => {
   });
 });
 
-app.listen(PORT, () => {
-  console.log(`Server is running locally at http://localhost:${PORT}`);
+app.listen(PORT, '0.0.0.0', () => {
+  const os = require('os');
+  const networkInterfaces = os.networkInterfaces();
+  const ips = [];
+  Object.keys(networkInterfaces).forEach(ifname => {
+    networkInterfaces[ifname].forEach(iface => {
+      if (iface.family === 'IPv4' && !iface.internal) {
+        ips.push(iface.address);
+      }
+    });
+  });
+
+  console.log(`==================================================`);
+  console.log(`WSL Token Monitor está rodando no WSL / Linux!`);
+  console.log(`Acesse no Windows usando:`);
+  console.log(`👉 http://localhost:${PORT}`);
+  ips.forEach(ip => {
+    console.log(`👉 http://${ip}:${PORT} (IP do WSL)`);
+  });
+  console.log(`==================================================`);
 });

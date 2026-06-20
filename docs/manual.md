@@ -64,7 +64,11 @@ Isso iniciará o servidor e redirecionará a saída de logs para o arquivo `serv
 
 ## 💻 2. Manual de Funcionamento (Guia de Uso da Interface)
 
-Com o servidor rodando, abra o navegador no Windows e acesse: **[http://localhost:3030](http://localhost:3030)**.
+Com o servidor rodando, abra o navegador no Windows e acesse:
+👉 **[http://localhost:3030](http://localhost:3030)**
+
+> [!TIP]
+> Caso a porta não seja redirecionada automaticamente pelo WSL (ou você queira acessar de outro local na rede), você pode descobrir o IP do seu WSL rodando `ip addr show eth0 | grep inet` no terminal do WSL, ou simplesmente verificando o log de inicialização do servidor, que imprimirá os endereços de acesso, como por exemplo `http://172.x.x.x:3030`.
 
 > [!NOTE]
 > Por padrão, o monitor vasculha os arquivos de banco de dados SQLite gerados pelo AIOX no caminho `/home/abnerfc01/.gemini/antigravity-cli/conversations/`. Ele não altera nem apaga nenhuma das suas conversas originais.
