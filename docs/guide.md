@@ -1,6 +1,6 @@
-# Guia do Monitor de Tokens WSL (AIOX Cost Tracker)
+# Guia Técnico: WSL Token Monitor (Projeto Open-Source)
 
-Desenvolvemos uma aplicação web em Node.js (Express) com frontend em HTML/CSS/JS e um leitor em Python que vasculha as conversações locais do AIOX e consolida o consumo de tokens e a estimativa de custos por projeto.
+Desenvolvemos uma aplicação open-source em Node.js (Express) com frontend em HTML/CSS/JS e um leitor em Python que vasculha as conversações locais do AIOX e consolida o consumo de tokens e a estimativa de custos por projeto.
 
 ## Estrutura do Projeto
 

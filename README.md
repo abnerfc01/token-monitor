@@ -1,6 +1,6 @@
-# WSL Token Monitor
+# WSL Token Monitor (Projeto Open-Source)
 
-Um painel web moderno com visual *glassmorphic* e tema escuro projetado especificamente para rodar em ambientes WSL / Linux. O monitor escaneia de forma agregada os históricos locais de diferentes assistentes de IA (como CLI e IDE), consolidando o consumo de tokens e a estimativa de custos financeiros por projeto de software.
+Um painel web moderno de código aberto (*open-source*) com visual *glassmorphic* e tema escuro projetado especificamente para rodar em ambientes WSL / Linux. O monitor escaneia de forma agregada os históricos locais de diferentes assistentes de IA (como CLI e IDE), consolidando o consumo de tokens e a estimativa de custos financeiros por projeto de software.
 
 ---
 
@@ -107,3 +107,9 @@ Use os seguintes comandos no terminal do WSL para controlar o monitor de tokens:
 * **Reiniciar o serviço**: `systemctl --user restart token-monitor`
 * **Ver logs em tempo real**: `journalctl --user -u token-monitor -f`
 * **Desativar a inicialização automática no boot**: `systemctl --user disable token-monitor`
+
+---
+
+## 📄 Licença e Código Aberto
+
+Este é um projeto **open-source** (código aberto) distribuído sob a licença **ISC**. Sinta-se à vontade para utilizar, modificar, distribuir e enviar contribuições para melhoria do monitor.

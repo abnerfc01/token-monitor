@@ -1,6 +1,6 @@
-# Manual de Implantação e Funcionamento: Monitor de Tokens WSL
+# Manual de Implantação e Funcionamento: WSL Token Monitor (Open-Source)
 
-Este guia contém as instruções passo a passo para implantar, executar em segundo plano e utilizar a aplicação **WSL Token Monitor** no seu ambiente.
+Este guia contém as instruções passo a passo para implantar, executar em segundo plano e utilizar a aplicação open-source **WSL Token Monitor** no seu ambiente.
 
 ---
 
