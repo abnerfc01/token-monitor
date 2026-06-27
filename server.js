@@ -2,6 +2,7 @@ const express = require('express');
 const fs = require('fs');
 const path = require('path');
 const { exec } = require('child_process');
+const https = require('https');
 
 // Load environment variables from .env file if it exists
 const dotenvPath = path.join(__dirname, '.env');
@@ -140,6 +141,120 @@ app.post('/api/prices', (req, res) => {
   const newPrices = req.body;
   writeJSON(PRICES_FILE, newPrices);
   res.json({ success: true, prices: newPrices });
+});
+
+// Helper: Fetch pricing data from the internet
+function fetchLLMPrices() {
+  return new Promise((resolve, reject) => {
+    https.get('https://www.llm-prices.com/current-v1.json', (res) => {
+      if (res.statusCode !== 200) {
+        reject(new Error(`Failed to fetch pricing: HTTP ${res.statusCode}`));
+        return;
+      }
+      let body = '';
+      res.on('data', (chunk) => body += chunk);
+      res.on('end', () => {
+        try {
+          resolve(JSON.parse(body));
+        } catch (e) {
+          reject(e);
+        }
+      });
+    }).on('error', reject);
+  });
+}
+
+// Automatic Cost Update from Web
+app.post('/api/prices/update-auto', async (req, res) => {
+  try {
+    const apiData = await fetchLLMPrices();
+    if (!apiData || !Array.isArray(apiData.prices)) {
+      return res.status(500).json({ error: 'Formato de resposta inválido da API de preços.' });
+    }
+
+    const prices = readJSON(PRICES_FILE, DEFAULT_PRICES);
+    const apiPrices = apiData.prices;
+    const updatedModels = [];
+
+    const DIRECT_MAPPINGS = {
+      "Gemini 3.5 Flash (Medium)": "Gemini 3.5 Flash",
+      "Gemini 3.5 Flash (High)": "Gemini 3.5 Flash",
+      "Gemini 3.5 Flash (Low)": "Gemini 3.5 Flash",
+      "Gemini 3.1 Pro (Low)": "Gemini 3.1 Pro",
+      "Gemini 3.1 Pro (High)": "Gemini 3.1 Pro",
+      "Claude Sonnet 4.6 (Thinking)": "Claude Sonnet 4.6",
+      "Claude Opus 4.6 (Thinking)": "Claude Opus 4.6",
+      "GPT-OSS 120B (Medium)": "GPT-OSS 120B"
+    };
+
+    function findBestMatch(modelName) {
+      const directName = DIRECT_MAPPINGS[modelName];
+      const searchName = (directName || modelName).toLowerCase().trim();
+      
+      // 1. Try exact name match
+      let match = apiPrices.find(p => p.name.toLowerCase() === searchName || p.id.toLowerCase() === searchName);
+      if (match) return match;
+      
+      // 2. Try substring match (e.g., "gemini 3.5 flash" in "gemini 3.5 flash preview")
+      match = apiPrices.find(p => p.name.toLowerCase().includes(searchName) || searchName.includes(p.name.toLowerCase()));
+      if (match) return match;
+      
+      // 3. Try token/word intersection matching
+      const searchWords = searchName.split(/[\s\-._/]+/).filter(w => w.length > 1);
+      let bestMatch = null;
+      let bestScore = 0;
+      
+      apiPrices.forEach(p => {
+        const apiWords = p.name.toLowerCase().split(/[\s\-._/]+/).filter(w => w.length > 1);
+        const intersection = searchWords.filter(w => apiWords.includes(w));
+        if (intersection.length > bestScore) {
+          bestScore = intersection.length;
+          bestMatch = p;
+        }
+      });
+      
+      if (bestScore >= 2) {
+        return bestMatch;
+      }
+      return null;
+    }
+
+    Object.keys(prices).forEach(modelName => {
+      const match = findBestMatch(modelName);
+      if (match) {
+        const oldInput = prices[modelName].input;
+        const oldOutput = prices[modelName].output;
+        const oldCached = prices[modelName].cached;
+
+        const inputPrice = parseFloat(match.input);
+        const outputPrice = parseFloat(match.output);
+        const cachedPrice = match.input_cached !== null && match.input_cached !== undefined
+          ? parseFloat(match.input_cached)
+          : parseFloat((match.input * 0.25).toFixed(5));
+
+        prices[modelName] = {
+          input: inputPrice,
+          output: outputPrice,
+          cached: cachedPrice
+        };
+
+        if (oldInput !== inputPrice || oldOutput !== outputPrice || oldCached !== cachedPrice) {
+          updatedModels.push({
+            model: modelName,
+            matchedAs: match.name,
+            old: { input: oldInput, output: oldOutput, cached: oldCached },
+            new: { input: inputPrice, output: outputPrice, cached: cachedPrice }
+          });
+        }
+      }
+    });
+
+    writeJSON(PRICES_FILE, prices);
+    res.json({ success: true, updatedCount: updatedModels.length, updates: updatedModels, prices });
+  } catch (err) {
+    console.error('Error updating prices automatically:', err);
+    res.status(500).json({ error: 'Erro ao obter preços automaticamente da internet.', details: err.message });
+  }
 });
 
 // Run Python script to scan conversations and merge with project configuration

@@ -1,38 +1,38 @@
 {
   "Gemini 3.5 Flash (Medium)": {
-    "input": 0.075,
-    "output": 0.3,
-    "cached": 0.01875
+    "input": 1.5,
+    "output": 9,
+    "cached": 0.15
   },
   "Gemini 3.5 Flash (High)": {
-    "input": 0.075,
-    "output": 0.3,
-    "cached": 0.01875
+    "input": 1.5,
+    "output": 9,
+    "cached": 0.15
   },
   "Gemini 3.5 Flash (Low)": {
-    "input": 0.075,
-    "output": 0.3,
-    "cached": 0.01875
+    "input": 1.5,
+    "output": 9,
+    "cached": 0.15
   },
   "Gemini 3.1 Pro (Low)": {
-    "input": 1.25,
-    "output": 5,
-    "cached": 0.3125
+    "input": 2,
+    "output": 12,
+    "cached": 0.5
   },
   "Gemini 3.1 Pro (High)": {
-    "input": 1.25,
-    "output": 5,
-    "cached": 0.3125
+    "input": 2,
+    "output": 12,
+    "cached": 0.5
   },
   "Claude Sonnet 4.6 (Thinking)": {
     "input": 3,
     "output": 15,
-    "cached": 0.3
+    "cached": 0.75
   },
   "Claude Opus 4.6 (Thinking)": {
-    "input": 15,
-    "output": 75,
-    "cached": 1.5
+    "input": 5,
+    "output": 25,
+    "cached": 1.25
   },
   "GPT-OSS 120B (Medium)": {
     "input": 0.5,
@@ -40,8 +40,8 @@
     "cached": 0
   },
   "gemini-3.1-pro-low": {
-    "input": 0,
-    "output": 0,
-    "cached": 0
+    "input": 1.25,
+    "output": 10,
+    "cached": 0.3125
   }
 }

@@ -292,6 +292,9 @@
             <div class="form-actions">
               <button type="submit" class="btn btn-primary" id="save-prices-btn">Salvar Alterações de Preço</button>
               <button type="button" class="btn btn-secondary" onclick="resetPricesToDefault()">Restaurar Valores Padrão</button>
+              <button type="button" class="btn btn-primary" onclick="updatePricesAutomatically()" style="background: linear-gradient(135deg, var(--secondary) 0%, var(--accent-blue) 100%); color: var(--text-dark); box-shadow: 0 4px 15px rgba(0, 245, 212, 0.3);">
+                <span class="btn-icon">⚡</span> Atualizar via Internet
+              </button>
             </div>
           </form>
         </div>
@@ -380,6 +383,23 @@
             </tbody>
           </table>
         </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Generic Alert/Confirm Modal -->
+  <div id="dialog-modal" class="modal hidden">
+    <div class="modal-content glass" style="max-width: 500px;">
+      <div class="modal-header">
+        <h3 id="dialog-title">Mensagem</h3>
+        <button class="modal-close" onclick="closeDialog(false)">✕</button>
+      </div>
+      <div class="modal-body" style="padding: 10px 0 20px 0;">
+        <p id="dialog-message" style="color: var(--text-muted); font-size: 15px; white-space: pre-line; line-height: 1.6;"></p>
+      </div>
+      <div class="form-actions" style="margin-top: 0; justify-content: flex-end; gap: 12px;" id="dialog-actions">
+        <button id="dialog-btn-cancel" class="btn btn-secondary" onclick="closeDialog(false)">Cancelar</button>
+        <button id="dialog-btn-ok" class="btn btn-primary" onclick="closeDialog(true)">OK</button>
       </div>
     </div>
   </div>

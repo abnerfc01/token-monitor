@@ -123,7 +123,7 @@ async function fetchData() {
       renderHistoryTable();
     }
   } catch (err) {
-    alert('Erro ao buscar dados. Verifique o servidor local.');
+    await systemAlert('Erro', 'Erro ao buscar dados. Verifique o servidor local.');
     console.error(err);
   } finally {
     showLoading(false);
@@ -541,7 +541,7 @@ async function registerProject(e) {
       await fetchData(); // refresh stats matching
     } else {
       const err = await res.json();
-      alert(`Erro: ${err.error}`);
+      await systemAlert('Erro', `Erro: ${err.error}`);
     }
   } catch (err) {
     console.error(err);
@@ -565,7 +565,7 @@ async function quickRegister(name, path) {
       await fetchData();
     } else {
       const err = await res.json();
-      alert(`Erro: ${err.error}`);
+      await systemAlert('Erro', `Erro: ${err.error}`);
     }
   } catch (err) {
     console.error(err);
@@ -576,7 +576,7 @@ async function quickRegister(name, path) {
 
 // Delete Project
 async function deleteProject(id) {
-  if (!confirm('Deseja realmente remover o monitoramento deste projeto? Os bancos de dados locais NÃO serão apagados.')) {
+  if (!await systemConfirm('Remover Projeto', 'Deseja realmente remover o monitoramento deste projeto? Os bancos de dados locais NÃO serão apagados.')) {
     return;
   }
   
@@ -587,7 +587,7 @@ async function deleteProject(id) {
       await fetchProjects();
       await fetchData();
     } else {
-      alert('Erro ao excluir projeto.');
+      await systemAlert('Erro', 'Erro ao excluir projeto.');
     }
   } catch (err) {
     console.error(err);
@@ -719,6 +719,46 @@ function closeModal() {
   document.getElementById('conv-modal').classList.add('hidden');
 }
 
+// Custom Dialog Promise-based implementation
+let dialogResolve = null;
+
+function showSystemDialog(title, message, isConfirm = false) {
+  return new Promise((resolve) => {
+    dialogResolve = resolve;
+    document.getElementById('dialog-title').innerText = title;
+    document.getElementById('dialog-message').innerText = message;
+    
+    const cancelBtn = document.getElementById('dialog-btn-cancel');
+    const okBtn = document.getElementById('dialog-btn-ok');
+    
+    if (isConfirm) {
+      cancelBtn.style.display = 'inline-flex';
+      okBtn.innerText = 'Confirmar';
+    } else {
+      cancelBtn.style.display = 'none';
+      okBtn.innerText = 'OK';
+    }
+    
+    document.getElementById('dialog-modal').classList.remove('hidden');
+  });
+}
+
+function closeDialog(result) {
+  document.getElementById('dialog-modal').classList.add('hidden');
+  if (dialogResolve) {
+    dialogResolve(result);
+    dialogResolve = null;
+  }
+}
+
+async function systemAlert(title, message) {
+  await showSystemDialog(title, message, false);
+}
+
+async function systemConfirm(title, message) {
+  return await showSystemDialog(title, message, true);
+}
+
 function calcStepCost(gen) {
   const modelPrice = prices[gen.model] || prices["Gemini 3.5 Flash (Medium)"];
   const inCost = (gen.input_tokens / 1000000) * modelPrice.input;
@@ -778,10 +818,10 @@ async function savePrices(e) {
     
     if (res.ok) {
       prices = newPrices;
-      alert('Tabela de preços atualizada com sucesso!');
+      await systemAlert('Sucesso', 'Tabela de preços atualizada com sucesso!');
       await fetchData(); // Recalculate costs with new prices
     } else {
-      alert('Erro ao salvar preços.');
+      await systemAlert('Erro', 'Erro ao salvar preços.');
     }
   } catch (err) {
     console.error(err);
@@ -790,9 +830,46 @@ async function savePrices(e) {
   }
 }
 
+// Automatically update prices from the internet
+async function updatePricesAutomatically() {
+  if (!await systemConfirm('Atualizar via Internet', 'Deseja buscar as tarifas mais recentes da internet para os seus modelos cadastrados? Os valores locais serão atualizados automaticamente.')) return;
+  
+  showLoading(true);
+  try {
+    const res = await fetch('/api/prices/update-auto', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' }
+    });
+    
+    if (res.ok) {
+      const data = await res.json();
+      prices = data.prices;
+      renderPricesTable();
+      if (data.updatedCount > 0) {
+        let msg = `Sucesso! Preços de ${data.updatedCount} modelos foram atualizados:\n`;
+        data.updates.forEach(u => {
+          msg += `- ${u.model} (Mapeado de "${u.matchedAs}"): $${u.old.input.toFixed(3)} -> $${u.new.input.toFixed(3)} input\n`;
+        });
+        await systemAlert('Atualização de Preços', msg);
+      } else {
+        await systemAlert('Atualização de Preços', 'Todos os preços já estão atualizados com as tarifas mais recentes da internet!');
+      }
+      await fetchData(); // Recalculate everything with new prices
+    } else {
+      const err = await res.json();
+      await systemAlert('Erro', `Erro ao atualizar preços: ${err.error || 'Erro desconhecido'}`);
+    }
+  } catch (err) {
+    console.error(err);
+    await systemAlert('Erro', 'Erro de conexão ao tentar atualizar os preços.');
+  } finally {
+    showLoading(false);
+  }
+}
+
 // Reset Prices to System Defaults
 async function resetPricesToDefault() {
-  if (!confirm('Deseja restaurar as tarifas padrão do sistema?')) return;
+  if (!await systemConfirm('Restaurar Padrões', 'Deseja restaurar as tarifas padrão do sistema?')) return;
   
   const defaultPrices = {
     "Gemini 3.5 Flash (Medium)": { "input": 0.075, "output": 0.30, "cached": 0.01875 },
@@ -816,7 +893,7 @@ async function resetPricesToDefault() {
     if (res.ok) {
       prices = defaultPrices;
       renderPricesTable();
-      alert('Tarifas padrão restauradas!');
+      await systemAlert('Sucesso', 'Tarifas padrão restauradas!');
       await fetchData();
     }
   } catch (err) {
