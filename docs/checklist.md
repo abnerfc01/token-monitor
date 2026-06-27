@@ -42,8 +42,10 @@ Este documento serve como um guia de acompanhamento para as tarefas concluídas,
   - [x] Validar e aprimorar a extração de dados nos históricos de chat do Aider CLI (`.aider.chat.history.md`).
 
 ### 📊 Recursos do Dashboard (Frontend)
-- [x] **📥 Exportação de Relatórios (CSV)**:
+- [x] **📥 Exportação de Relatórios (CSV) e Colunas Multi-moeda**:
   - [x] Adicionar botões para exportar as tabelas de detalhamento de projetos e histórico de uso como arquivos CSV locais.
+  - [x] Separar visualmente os custos estimados em colunas distintas para Dólar (USD) e Real (BRL) na tabela do dashboard e nos relatórios exportados.
+  - [x] Inserir colunas de `Data Inicio` e `Data Fim` no CSV de detalhamento de projetos (baseando-se no range de atividade) e histórico de uso.
 
 ### ⚡ Otimização de Performance
 - [x] **Cache em Memória no Backend**:

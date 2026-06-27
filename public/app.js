@@ -274,6 +274,9 @@ function renderDashboardTable() {
       ? Array.from(uniqueModels).map(m => `<span class="model-badge">${m}</span>`).join(' ') 
       : '<span class="model-badge empty">Nenhum</span>';
     
+    const exchangeRate = prices._usd_brl !== undefined ? prices._usd_brl : 5.45;
+    const projectCostBRL = projectCost * exchangeRate;
+
     const tr = document.createElement('tr');
     tr.innerHTML = `
       <td class="project-name-td">${projName}</td>
@@ -283,7 +286,8 @@ function renderDashboardTable() {
       <td>${formatNumber(projectInput)}</td>
       <td>${formatNumber(projectCached)}</td>
       <td>${formatNumber(projectOutput)}</td>
-      <td class="cost-td">$${projectCost.toFixed(3)}</td>
+      <td class="cost-td" style="color: var(--text-muted); font-size: 13px;">$${projectCost.toFixed(3)}</td>
+      <td class="cost-td">R$ ${projectCostBRL.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
     `;
     tbody.appendChild(tr);
   });
@@ -1595,7 +1599,9 @@ function exportProjectsCSV() {
     ? selectedProjectIds 
     : Object.keys(usageData.byProject);
 
-  let csvContent = "Projeto,Caminho Local,Modelos,N_Conversas,Tokens Entrada,Tokens Cache,Tokens Saida,Custo Estimado (USD)\r\n";
+  const exchangeRate = prices._usd_brl !== undefined ? prices._usd_brl : 5.45;
+
+  let csvContent = "Projeto,Caminho Local,Modelos,N_Conversas,Data Inicio,Data Fim,Tokens Entrada,Tokens Cache,Tokens Saida,Custo Estimado (USD),Custo Estimado (BRL)\r\n";
 
   const startEpoch = getStartEpoch();
   const endEpoch = getEndEpoch();
@@ -1613,6 +1619,8 @@ function exportProjectsCSV() {
     let projectOutput = 0;
     let projectCached = 0;
     let matchedConvsCount = 0;
+    let minTimestamp = Infinity;
+    let maxTimestamp = -Infinity;
     const uniqueModels = new Set();
 
     group.conversations.forEach(conv => {
@@ -1633,6 +1641,9 @@ function exportProjectsCSV() {
           projectInput += gen.input_tokens;
           projectOutput += gen.output_tokens;
           projectCached += gen.cached_tokens;
+          
+          if (gen.timestamp < minTimestamp) minTimestamp = gen.timestamp;
+          if (gen.timestamp > maxTimestamp) maxTimestamp = gen.timestamp;
         }
       });
       if (convMatched) {
@@ -1643,12 +1654,15 @@ function exportProjectsCSV() {
     if (selectedModels.length > 0 && matchedConvsCount === 0) return;
 
     const modelsList = uniqueModels.size > 0 ? Array.from(uniqueModels).join(' | ') : 'Nenhum';
+    const startDateStr = minTimestamp !== Infinity ? new Date(minTimestamp * 1000).toLocaleString('pt-BR') : 'N/A';
+    const endDateStr = maxTimestamp !== -Infinity ? new Date(maxTimestamp * 1000).toLocaleString('pt-BR') : 'N/A';
+    const projectCostBRL = projectCost * exchangeRate;
 
     const escapedName = `"${projName.replace(/"/g, '""')}"`;
     const escapedPath = `"${projPath.replace(/"/g, '""')}"`;
     const escapedModels = `"${modelsList.replace(/"/g, '""')}"`;
 
-    csvContent += `${escapedName},${escapedPath},${escapedModels},${matchedConvsCount},${projectInput},${projectCached},${projectOutput},${projectCost.toFixed(3)}\r\n`;
+    csvContent += `${escapedName},${escapedPath},${escapedModels},${matchedConvsCount},"${startDateStr}","${endDateStr}",${projectInput},${projectCached},${projectOutput},${projectCost.toFixed(3)},${projectCostBRL.toFixed(2)}\r\n`;
   });
 
   // Download logic with UTF-8 BOM for Excel compatibility
@@ -1675,6 +1689,8 @@ function exportHistoryCSV() {
   
   const startEpoch = getStartEpoch();
   const endEpoch = getEndEpoch();
+
+  const exchangeRate = prices._usd_brl !== undefined ? prices._usd_brl : 5.45;
   
   Object.entries(usageData.byProject).forEach(([key, group]) => {
     if (filterVal === 'all' || filterVal === key) {
@@ -1697,15 +1713,19 @@ function exportHistoryCSV() {
     return;
   }
 
-  let csvContent = "ID Conversa,Projeto,Ultima Modificacao,Passos,Tokens Entrada,Tokens Cache,Tokens Saida,Custo Total (USD)\r\n";
+  let csvContent = "ID Conversa,Projeto,Data Inicio,Data Fim (Ultima Modificacao),Passos,Tokens Entrada,Tokens Cache,Tokens Saida,Custo Total (USD),Custo Total (BRL)\r\n";
 
   list.forEach(c => {
-    const dateStr = new Date(c.last_modified * 1000).toLocaleString('pt-BR');
+    const startDateStr = new Date(c.start_time * 1000).toLocaleString('pt-BR');
+    const endDateStr = new Date(c.last_modified * 1000).toLocaleString('pt-BR');
+    const projectCostBRL = c.cost * exchangeRate;
+
     const escapedId = `"${c.conversation_id.replace(/"/g, '""')}"`;
     const escapedProj = `"${c.projectName.replace(/"/g, '""')}"`;
-    const escapedDate = `"${dateStr.replace(/"/g, '""')}"`;
+    const escapedStartDate = `"${startDateStr.replace(/"/g, '""')}"`;
+    const escapedEndDate = `"${endDateStr.replace(/"/g, '""')}"`;
 
-    csvContent += `${escapedId},${escapedProj},${escapedDate},${c.steps_count},${c.input_tokens},${c.cached_tokens},${c.output_tokens},${c.cost.toFixed(3)}\r\n`;
+    csvContent += `${escapedId},${escapedProj},${escapedStartDate},${escapedEndDate},${c.steps_count},${c.input_tokens},${c.cached_tokens},${c.output_tokens},${c.cost.toFixed(3)},${projectCostBRL.toFixed(2)}\r\n`;
   });
 
   // Download logic with UTF-8 BOM for Excel compatibility
