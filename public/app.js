@@ -144,6 +144,9 @@ function updateKPIs() {
     ? selectedProjectIds 
     : Object.keys(usageData.byProject);
     
+  const startEpoch = getStartEpoch();
+  const endEpoch = getEndEpoch();
+    
   targetProjectKeys.forEach(key => {
     const group = usageData.byProject[key];
     if (group && group.conversations) {
@@ -156,7 +159,8 @@ function updateKPIs() {
         
         conv.generations.forEach(gen => {
           const matchesModel = selectedModels.length === 0 || selectedModels.includes(gen.model);
-          if (matchesModel) {
+          const matchesDate = (!startEpoch || gen.timestamp >= startEpoch) && (!endEpoch || gen.timestamp <= endEpoch);
+          if (matchesModel && matchesDate) {
             convMatches = true;
             const modelPrice = prices[gen.model] || prices["Gemini 3.5 Flash (Medium)"];
             const inCost = (gen.input_tokens / 1000000) * modelPrice.input;
@@ -221,11 +225,15 @@ function renderDashboardTable() {
     let matchedConvsCount = 0;
     const uniqueModels = new Set();
     
+    const startEpoch = getStartEpoch();
+    const endEpoch = getEndEpoch();
+
     group.conversations.forEach(conv => {
       let convMatched = false;
       conv.generations.forEach(gen => {
         const matchesModel = selectedModels.length === 0 || selectedModels.includes(gen.model);
-        if (matchesModel) {
+        const matchesDate = (!startEpoch || gen.timestamp >= startEpoch) && (!endEpoch || gen.timestamp <= endEpoch);
+        if (matchesModel && matchesDate) {
           convMatched = true;
           if (gen.model) uniqueModels.add(gen.model);
           
@@ -294,10 +302,14 @@ function renderCharts() {
     if (!group) return;
     
     let projectCost = 0;
+    const startEpoch = getStartEpoch();
+    const endEpoch = getEndEpoch();
+
     group.conversations.forEach(conv => {
       conv.generations.forEach(gen => {
         const matchesModel = selectedModels.length === 0 || selectedModels.includes(gen.model);
-        if (matchesModel) {
+        const matchesDate = (!startEpoch || gen.timestamp >= startEpoch) && (!endEpoch || gen.timestamp <= endEpoch);
+        if (matchesModel && matchesDate) {
           const modelPrice = prices[gen.model] || prices["Gemini 3.5 Flash (Medium)"];
           const stepCost = ((gen.input_tokens / 1000000) * modelPrice.input) +
                            ((gen.output_tokens / 1000000) * modelPrice.output) +
@@ -354,6 +366,9 @@ function renderCharts() {
   // Group tokens by model name, filtering by active projects and models
   const modelStats = {};
   
+  const startEpoch = getStartEpoch();
+  const endEpoch = getEndEpoch();
+
   targetProjectKeys.forEach(key => {
     const group = usageData.byProject[key];
     if (!group) return;
@@ -362,7 +377,9 @@ function renderCharts() {
       conv.generations.forEach(gen => {
         const model = gen.model;
         const matchesModel = selectedModels.length === 0 || selectedModels.includes(model);
-        if (matchesModel) {
+        const matchesDate = (!startEpoch || gen.timestamp >= startEpoch) && (!endEpoch || gen.timestamp <= endEpoch);
+        
+        if (matchesModel && matchesDate) {
           if (!modelStats[model]) {
             modelStats[model] = { input: 0, output: 0, cached: 0 };
           }
@@ -624,13 +641,19 @@ function renderHistoryTable() {
   const filterVal = document.getElementById('filter-project').value;
   let list = [];
   
+  const startEpoch = getStartEpoch();
+  const endEpoch = getEndEpoch();
+  
   Object.entries(usageData.byProject).forEach(([key, group]) => {
     if (filterVal === 'all' || filterVal === key) {
       group.conversations.forEach(conv => {
-        list.push({
-          ...conv,
-          projectName: group.project.name
-        });
+        const matchesDate = (!startEpoch || conv.last_modified >= startEpoch) && (!endEpoch || conv.last_modified <= endEpoch);
+        if (matchesDate) {
+          list.push({
+            ...conv,
+            projectName: group.project.name
+          });
+        }
       });
     }
   });
@@ -667,7 +690,31 @@ function renderHistoryTable() {
 }
 
 function applyFilters() {
-  renderHistoryTable();
+  refreshFilteredDashboard();
+}
+
+function getStartEpoch() {
+  const input = document.getElementById('filter-start-date');
+  if (input && input.value) {
+    return Math.floor(new Date(input.value + 'T00:00:00').getTime() / 1000);
+  }
+  return null;
+}
+
+function getEndEpoch() {
+  const input = document.getElementById('filter-end-date');
+  if (input && input.value) {
+    return Math.floor(new Date(input.value + 'T23:59:59').getTime() / 1000);
+  }
+  return null;
+}
+
+function clearDateRange() {
+  const startInput = document.getElementById('filter-start-date');
+  const endInput = document.getElementById('filter-end-date');
+  if (startInput) startInput.value = '';
+  if (endInput) endInput.value = '';
+  applyFilters();
 }
 
 // Modal Conversation Details
@@ -929,6 +976,9 @@ function updateTimeSeriesChart() {
     ? selectedProjectIds 
     : Object.keys(usageData.byProject);
     
+  const startEpoch = getStartEpoch();
+  const endEpoch = getEndEpoch();
+    
   targetProjectKeys.forEach(key => {
     const group = usageData.byProject[key];
     if (group && group.conversations) {
@@ -936,7 +986,8 @@ function updateTimeSeriesChart() {
         if (conv.generations && Array.isArray(conv.generations)) {
           conv.generations.forEach(gen => {
             const matchesModel = selectedModels.length === 0 || selectedModels.includes(gen.model);
-            if (matchesModel) {
+            const matchesDate = (!startEpoch || gen.timestamp >= startEpoch) && (!endEpoch || gen.timestamp <= endEpoch);
+            if (matchesModel && matchesDate) {
               generations.push(gen);
             }
           });
@@ -1282,6 +1333,8 @@ function refreshFilteredDashboard() {
   updateKPIs();
   renderDashboardTable();
   renderCharts();
+  updateTimeSeriesChart();
+  renderHistoryTable();
 }
 
 // Auto-complete multi-select functions for Model Filters

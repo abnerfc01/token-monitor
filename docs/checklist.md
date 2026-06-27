@@ -22,6 +22,9 @@ Este documento serve como um guia de acompanhamento para as tarefas concluídas,
   - [x] Desenvolvido um modal de diálogo genérico e promise-based (`dialog-modal`) em `index.html` seguindo o design system do Glassmorphism.
   - [x] Criadas as funções utilitárias `systemAlert` e `systemConfirm` em `app.js`.
   - [x] Substituídas todas as chamadas nativas de `alert()` e `confirm()` no frontend por diálogos internos da aplicação (confirmações de exclusão, avisos de sucesso/erro e mensagens de progresso).
+- [x] **Filtros de Período Customizados (Date Range)**:
+  - [x] Adicionados seletores de data (`input[type="date"]`) no painel de filtros globais.
+  - [x] Implementada lógica de filtragem integrada que recalcula os KPIs, gráficos e a tabela de histórico de acordo com o intervalo selecionado.
 
 ---
 
@@ -38,8 +41,6 @@ Este documento serve como um guia de acompanhamento para as tarefas concluídas,
   - [ ] Adicionar suporte a um fator de conversão de câmbio (USD/BRL) configurável na interface de preços, permitindo exibir todos os custos consolidados diretamente em Reais (R$).
 - [ ] **📥 Exportação de Relatórios (CSV)**:
   - [ ] Adicionar botões para exportar as tabelas de detalhamento de projetos e histórico de uso como arquivos CSV locais.
-- [ ] **📅 Filtros de Período Customizados (Date Range)**:
-  - [ ] Adicionar seletores de data (`<input type="date">`) no painel para filtrar os KPIs e gráficos de acordo com um intervalo de tempo flexível.
 
 ### ⚡ Otimização de Performance
 - [ ] **Cache em Memória no Backend**:

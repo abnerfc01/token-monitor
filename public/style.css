@@ -835,6 +835,24 @@ body {
   z-index: 10;
 }
 
+.filters-row input[type="date"] {
+  background: rgba(10, 8, 30, 0.6);
+  border: 1px solid var(--panel-border);
+  color: var(--text-main);
+  padding: 8px 12px;
+  border-radius: 8px;
+  font-family: var(--font-body);
+  font-size: 14px;
+  outline: none;
+  transition: var(--transition);
+  cursor: pointer;
+}
+
+.filters-row input[type="date"]:focus {
+  border-color: var(--primary);
+  box-shadow: 0 0 10px rgba(155, 93, 229, 0.2);
+}
+
 .chart-header-filters {
   display: flex;
   flex-direction: column;
