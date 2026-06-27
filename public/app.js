@@ -42,6 +42,7 @@ async function init() {
     await fetchProjects();
     await fetchPrices();
     await fetchData();
+    initTiltEffect();
   } catch (err) {
     console.error('Error initializing application:', err);
   } finally {
@@ -90,6 +91,9 @@ function switchTab(tabId) {
   } else if (tabId === 'prices') {
     renderPricesTable();
   }
+  
+  // Staggered GSAP Tab Entrance Animation
+  animateTabEntrance(tabId);
 }
 
 // Fetch Functions
@@ -122,6 +126,9 @@ async function fetchData() {
     } else if (activeTab === 'history') {
       renderHistoryTable();
     }
+    
+    // Animate active tab entrance on data load
+    animateTabEntrance(activeTab);
   } catch (err) {
     await systemAlert('Erro', 'Erro ao buscar dados. Verifique o servidor local.');
     console.error(err);
@@ -405,6 +412,19 @@ function renderCharts() {
     outputDataset.push(modelStats[model].output);
   });
   
+  // Create canvas gradients for bar chart
+  const gradInput = modelCtx.createLinearGradient(0, 0, 0, 250);
+  gradInput.addColorStop(0, 'rgba(155, 93, 229, 0.85)');
+  gradInput.addColorStop(1, 'rgba(155, 93, 229, 0.15)');
+
+  const gradCached = modelCtx.createLinearGradient(0, 0, 0, 250);
+  gradCached.addColorStop(0, 'rgba(0, 187, 249, 0.85)');
+  gradCached.addColorStop(1, 'rgba(0, 187, 249, 0.15)');
+
+  const gradOutput = modelCtx.createLinearGradient(0, 0, 0, 250);
+  gradOutput.addColorStop(0, 'rgba(241, 91, 181, 0.85)');
+  gradOutput.addColorStop(1, 'rgba(241, 91, 181, 0.15)');
+  
   tokensChartInstance = new Chart(modelCtx, {
     type: 'bar',
     data: {
@@ -413,17 +433,23 @@ function renderCharts() {
         {
           label: 'Entrada',
           data: inputDataset,
-          backgroundColor: '#9b5de5'
+          backgroundColor: gradInput,
+          borderColor: '#9b5de5',
+          borderWidth: 1
         },
         {
           label: 'Cache (Hit)',
           data: cachedDataset,
-          backgroundColor: '#00bbf9'
+          backgroundColor: gradCached,
+          borderColor: '#00bbf9',
+          borderWidth: 1
         },
         {
           label: 'Saída',
           data: outputDataset,
-          backgroundColor: '#f15bb5'
+          backgroundColor: gradOutput,
+          borderColor: '#f15bb5',
+          borderWidth: 1
         }
       ]
     },
@@ -1194,16 +1220,29 @@ function updateTimeSeriesChart() {
   const showCached = cachedEl ? cachedEl.checked : true;
   const showOutput = outputEl ? outputEl.checked : true;
   
+  // Create canvas gradients for time series line chart
+  const gradLineInput = ctx.createLinearGradient(0, 0, 0, 250);
+  gradLineInput.addColorStop(0, 'rgba(155, 93, 229, 0.35)');
+  gradLineInput.addColorStop(1, 'rgba(155, 93, 229, 0.00)');
+  
+  const gradLineCached = ctx.createLinearGradient(0, 0, 0, 250);
+  gradLineCached.addColorStop(0, 'rgba(0, 187, 249, 0.35)');
+  gradLineCached.addColorStop(1, 'rgba(0, 187, 249, 0.00)');
+  
+  const gradLineOutput = ctx.createLinearGradient(0, 0, 0, 250);
+  gradLineOutput.addColorStop(0, 'rgba(241, 91, 181, 0.35)');
+  gradLineOutput.addColorStop(1, 'rgba(241, 91, 181, 0.00)');
+
   const datasets = [];
   if (showInput) {
     datasets.push({
       label: 'Entrada (K)',
       data: inputData,
       borderColor: '#9b5de5',
-      backgroundColor: 'rgba(155, 93, 229, 0.05)',
+      backgroundColor: gradLineInput,
       fill: true,
       tension: 0.3,
-      borderWidth: 2
+      borderWidth: 3
     });
   }
   if (showCached) {
@@ -1211,10 +1250,10 @@ function updateTimeSeriesChart() {
       label: 'Cache Hit (K)',
       data: cachedData,
       borderColor: '#00bbf9',
-      backgroundColor: 'rgba(0, 187, 249, 0.05)',
+      backgroundColor: gradLineCached,
       fill: true,
       tension: 0.3,
-      borderWidth: 2
+      borderWidth: 3
     });
   }
   if (showOutput) {
@@ -1222,10 +1261,10 @@ function updateTimeSeriesChart() {
       label: 'Saída (K)',
       data: outputData,
       borderColor: '#f15bb5',
-      backgroundColor: 'rgba(241, 91, 181, 0.05)',
+      backgroundColor: gradLineOutput,
       fill: true,
       tension: 0.3,
-      borderWidth: 2
+      borderWidth: 3
     });
   }
   
@@ -1472,4 +1511,73 @@ function renderModelTags() {
     `;
     container.appendChild(tag);
   });
+}
+
+// Interactive 3D Tilt Effect for cards and containers
+function initTiltEffect() {
+  const cards = document.querySelectorAll('.kpi-card, .chart-container');
+  
+  cards.forEach(card => {
+    card.addEventListener('mousemove', e => {
+      if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+        return;
+      }
+      
+      const rect = card.getBoundingClientRect();
+      const x = e.clientX - rect.left;
+      const y = e.clientY - rect.top;
+      
+      const centerX = rect.width / 2;
+      const centerY = rect.height / 2;
+      
+      const rotateX = ((centerY - y) / centerY) * 8;
+      const rotateY = ((x - centerX) / centerX) * 8;
+      
+      card.style.transform = `perspective(1000px) rotateX(${rotateX}deg) rotateY(${rotateY}deg) translateY(-4px)`;
+    });
+    
+    card.addEventListener('mouseleave', () => {
+      card.style.transform = 'perspective(1000px) rotateX(0deg) rotateY(0deg) translateY(0)';
+    });
+  });
+}
+
+// Staggered GSAP Tab Entrance Animation
+function animateTabEntrance(tabId) {
+  if (typeof gsap === 'undefined') return;
+  if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+    return;
+  }
+  
+  const activeTabEl = document.getElementById(`tab-${tabId}`);
+  if (!activeTabEl) return;
+  
+  // Select main UI components inside the tab
+  const animatableElements = activeTabEl.querySelectorAll(
+    '.kpi-card, .chart-container, .dashboard-filters, .table-container, .notice-box, .form-container, .list-container, .workspace-scanner-section'
+  );
+  
+  if (animatableElements.length > 0) {
+    // Kill active tweens to prevent stutter
+    gsap.killTweensOf(animatableElements);
+    
+    // Set initial 3D transform and opacity
+    gsap.set(animatableElements, { 
+      opacity: 0, 
+      y: 20, 
+      rotationX: -5,
+      transformPerspective: 1000 
+    });
+    
+    // Animate entrance in cascade (stagger)
+    gsap.to(animatableElements, {
+      opacity: 1,
+      y: 0,
+      rotationX: 0,
+      duration: 0.5,
+      stagger: 0.06,
+      ease: 'power2.out',
+      clearProps: 'transform' // clean transform inline styles for mouse tilt
+    });
+  }
 }

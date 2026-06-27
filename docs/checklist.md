@@ -47,3 +47,30 @@ Este documento serve como um guia de acompanhamento para as tarefas concluídas,
 ### ⚡ Otimização de Performance
 - [ ] **Cache em Memória no Backend**:
   - [ ] Salvar os resultados do processamento das bases de dados em cache no Express, recalculando os dados apenas quando o timestamp de última modificação (`mtime`) dos arquivos SQLite no diretório do AIOX sofrer alteração, reduzindo o custo de execução de subprocessos Python.
+
+---
+
+## 🎨 3. Plano de Implementação: Interface Premium (Antigravity Design)
+
+Esse plano visa elevar a interface a uma estética de profundidade espacial, movimentos elásticos orgânicos e riqueza visual tridimensional.
+
+### 🏁 Fase 1: Setup e Importações
+- [x] **Preparação do Canvas e Scripts**:
+  - [x] Importar a biblioteca GSAP e plugins no [index.html](file:///home/abner/code/token-monitor/public/index.html).
+  - [x] Injetar a estrutura de contêineres de luz para suportar efeitos de reflexo de fundo.
+
+### 🔮 Fase 2: Estética Glassmorphic & Aurora BG
+- [x] **Polimento Visual do Fundo e das Bordas**:
+  - [x] Adicionar elementos de Aurora flutuantes (`.aurora-blob`) no [style.css](file:///home/abner/code/token-monitor/public/style.css) com desfoque e movimentação cíclica lenta.
+  - [x] Atualizar painéis `.glass` para usar bordas gradientes luminosas e sombras mais profundas e dispersas (weightlessness).
+
+### 📐 Fase 3: Efeitos de Perspectiva & Tilt 3D
+- [x] **Interatividade Espacial**:
+  - [x] Implementar manipulador de eventos de mouse em [app.js](file:///home/abner/code/token-monitor/public/app.js) para calcular o ângulo de aproximação do cursor e aplicar rotações 3D reais nos eixos X e Y.
+  - [x] Adicionar efeito "pop-out" 3D (Z-axis offset) em emojis de KPI e valores numéricos importantes.
+
+### 🎬 Fase 4: Animações Orgânicas e Gráficos Neon
+- [x] **Transições e Estilo de Dados**:
+  - [x] Criar animações de entrada escalonadas (*staggered entrance*) ao mudar de abas ou recarregar os dados, usando transições elásticas do GSAP.
+  - [x] Atualizar os gráficos no Chart.js para usar gradientes verticais translúcidos e linhas neon com brilho difuso (*shadowBlur*).
+

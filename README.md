@@ -12,6 +12,12 @@ Um painel web moderno de código aberto (*open-source*) com visual *glassmorphic
 
 ## 🚀 Principais Funcionalidades
 
+* **Interface Espacial Premium (Antigravity Design)**:
+  * **Efeito Mouse Tilt 3D**: Cards de KPI e painéis rotacionam fisicamente nos eixos X e Y baseados na posição do mouse.
+  * **Efeito Pop-out (Z-axis offset)**: Elementos de informação e ícones saltam tridimensionalmente em hover.
+  * **Aurora Background**: Efeito de luzes nebulosas desfocadas flutuantes no fundo, enriquecendo a transparência do Glassmorphism.
+  * **Animações GSAP**: Transições e entradas de aba elásticas escalonadas (*staggered*) de alta performance.
+  * **Gráficos com Gradientes Neon**: Áreas e barras preenchidas com degradês verticais de canvas translúcidos para maior fidelidade visual.
 * **Multi-Ferramentas (Modular)**: Suporta múltiplos assistentes de IA através de uma arquitetura de adaptadores no backend:
   * **Google Antigravity / AIOX**: Coleta automática de bancos de dados SQLite da CLI e da IDE.
   * **Claude Code**: Estrutura pronta para capturar arquivos de sessão de log em formato JSON.
@@ -19,6 +25,7 @@ Um painel web moderno de código aberto (*open-source*) com visual *glassmorphic
 * **Inicialização Automática com o Sistema**: Configurado como um serviço de usuário do `systemd` para iniciar junto com o WSL / Linux.
 * **Consolidação Financeira**: Agrupa custos por projeto e por modelo de IA com base em tabelas de preços customizáveis.
 * **Gráficos Dinâmicos**: Visualização interativa utilizando Chart.js para distribuição de custos por projeto e consumo de tokens.
+
 
 ---
 

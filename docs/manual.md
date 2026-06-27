@@ -67,6 +67,13 @@ Isso iniciará o servidor e redirecionará a saída de logs para o arquivo `serv
 Com o servidor rodando, abra o navegador no Windows e acesse:
 👉 **[http://localhost:3030](http://localhost:3030)**
 
+### ✨ A Interface Premium (Design & Movimento)
+O monitor conta com o **Antigravity Design System**, provendo uma interface espacial moderna e interativa:
+* **Perspectiva 3D Tilt**: Ao mover o mouse sobre os KPI Cards ou Gráficos, eles se inclinam fisicamente em relação à posição do cursor.
+* **Profundidade (Z-axis Pop-out)**: Elementos internos como emojis e valores financeiros saltam da tela ao passar o mouse.
+* **Transições GSAP**: As abas e os cards realizam uma transição animada e elástica em cascata (*staggered*) ao serem renderizados.
+* **Acessibilidade**: Se o seu sistema operacional estiver configurado com a opção de **redução de movimentos** ativada (`prefers-reduced-motion`), todas as animações dinâmicas e o efeito tilt 3D são desativados de forma automática para garantir uma experiência confortável e segura.
+
 > [!TIP]
 > Caso a porta não seja redirecionada automaticamente pelo WSL (ou você queira acessar de outro local na rede), você pode descobrir o IP do seu WSL rodando `ip addr show eth0 | grep inet` no terminal do WSL, ou simplesmente verificando o log de inicialização do servidor, que imprimirá os endereços de acesso, como por exemplo `http://172.x.x.x:3030`.
 

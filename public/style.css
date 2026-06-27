@@ -50,17 +50,29 @@ body {
 
 /* Glassmorphism Utility */
 .glass {
-  background: var(--panel-bg);
-  backdrop-filter: blur(16px);
-  -webkit-backdrop-filter: blur(16px);
-  border: 1px solid var(--panel-border);
+  background: rgba(25, 22, 60, 0.35);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.06);
   border-radius: 16px;
-  box-shadow: var(--shadow);
-  transition: var(--transition);
+  box-shadow: 
+    0 15px 35px 0 rgba(0, 0, 0, 0.4),
+    inset 0 1px 1px 0 rgba(255, 255, 255, 0.1);
+  transition: 
+    border-color 0.4s cubic-bezier(0.25, 0.8, 0.25, 1),
+    box-shadow 0.4s cubic-bezier(0.25, 0.8, 0.25, 1),
+    transform 0.4s cubic-bezier(0.25, 0.8, 0.25, 1),
+    background-color 0.4s cubic-bezier(0.25, 0.8, 0.25, 1);
+  will-change: transform;
 }
 
 .glass:hover {
-  border-color: var(--panel-border-hover);
+  background: rgba(25, 22, 60, 0.45);
+  border-color: rgba(155, 93, 229, 0.3);
+  box-shadow: 
+    0 25px 50px 0 rgba(0, 0, 0, 0.5),
+    0 0 25px 0 rgba(155, 93, 229, 0.15),
+    inset 0 1px 1px 0 rgba(255, 255, 255, 0.15);
 }
 
 /* Layout Grid */
@@ -305,6 +317,7 @@ body {
   display: flex;
   align-items: center;
   gap: 20px;
+  transform-style: preserve-3d;
 }
 
 .kpi-icon {
@@ -315,6 +328,12 @@ body {
   display: flex;
   align-items: center;
   justify-content: center;
+  transition: transform 0.4s cubic-bezier(0.25, 0.8, 0.25, 1);
+  will-change: transform;
+}
+
+.kpi-card:hover .kpi-icon {
+  transform: translateZ(35px);
 }
 
 .icon-cost { background: rgba(0, 245, 212, 0.15); border: 1px solid rgba(0, 245, 212, 0.3); }
@@ -325,6 +344,13 @@ body {
 .kpi-info {
   display: flex;
   flex-direction: column;
+  transform-style: preserve-3d;
+  transition: transform 0.4s cubic-bezier(0.25, 0.8, 0.25, 1);
+  will-change: transform;
+}
+
+.kpi-card:hover .kpi-info {
+  transform: translateZ(20px);
 }
 
 .kpi-label {
@@ -366,6 +392,7 @@ body {
 
 .chart-container {
   padding: 24px;
+  transform-style: preserve-3d;
 }
 
 .chart-container.full-width {
@@ -395,12 +422,24 @@ body {
   font-size: 18px;
   font-weight: 600;
   margin-bottom: 20px;
+  transition: transform 0.4s cubic-bezier(0.25, 0.8, 0.25, 1);
+  will-change: transform;
+}
+
+.chart-container:hover h3 {
+  transform: translateZ(25px);
 }
 
 .chart-wrapper {
   position: relative;
   height: 280px;
   width: 100%;
+  transition: transform 0.4s cubic-bezier(0.25, 0.8, 0.25, 1);
+  will-change: transform;
+}
+
+.chart-container:hover .chart-wrapper {
+  transform: translateZ(15px);
 }
 
 /* Data Tables */
@@ -1018,4 +1057,66 @@ body {
 .suggestion-item:hover {
   background: rgba(155, 93, 229, 0.15);
   color: var(--text-main);
+}
+
+/* Aurora Background Glows */
+.aurora-bg {
+  position: fixed;
+  width: 100vw;
+  height: 100vh;
+  top: 0;
+  left: 0;
+  z-index: -1;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+.aurora-blob {
+  position: absolute;
+  border-radius: 50%;
+  filter: blur(140px);
+  opacity: 0.12;
+  will-change: transform;
+  animation: float-aurora 25s infinite alternate ease-in-out;
+}
+
+.aurora-blob-1 {
+  width: 600px;
+  height: 600px;
+  background: var(--primary);
+  top: -200px;
+  right: -100px;
+}
+
+.aurora-blob-2 {
+  width: 700px;
+  height: 700px;
+  background: var(--secondary);
+  bottom: -250px;
+  left: -150px;
+  animation-duration: 32s;
+  animation-delay: -5s;
+}
+
+.aurora-blob-3 {
+  width: 500px;
+  height: 500px;
+  background: var(--accent-purple);
+  top: 40%;
+  left: 30%;
+  animation-duration: 28s;
+  animation-delay: -12s;
+  opacity: 0.08;
+}
+
+@keyframes float-aurora {
+  0% {
+    transform: translate(0, 0) scale(1) rotate(0deg);
+  }
+  50% {
+    transform: translate(80px, -60px) scale(1.1) rotate(180deg);
+  }
+  100% {
+    transform: translate(-40px, 40px) scale(0.95) rotate(360deg);
+  }
 }
