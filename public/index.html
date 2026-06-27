@@ -143,13 +143,20 @@
             </div>
 
             <!-- Date Range Filter -->
-            <div class="filter-group date-range-select" style="min-width: 320px; display: flex; flex-direction: column; align-items: flex-start; gap: 6px;">
+            <div class="filter-group date-range-select" style="min-width: 380px; display: flex; flex-direction: column; align-items: flex-start; gap: 6px; max-width: none; flex: 1;">
               <span style="font-size:13px; color:var(--text-muted); font-weight:500;">Período (Intervalo de Datas):</span>
-              <div style="display: flex; gap: 8px; align-items: center; width: 100%;">
-                <input type="date" id="filter-start-date" onchange="applyFilters()">
+              <div style="display: flex; gap: 8px; align-items: center; width: 100%; flex-wrap: wrap;">
+                <input type="date" id="filter-start-date" onchange="applyFilters(); updateDatePresetsActiveState();">
                 <span style="color: var(--text-muted); font-size: 12px;">até</span>
-                <input type="date" id="filter-end-date" onchange="applyFilters()">
-                <button type="button" class="btn btn-secondary" onclick="clearDateRange()" style="padding: 8px 12px; border-radius: 8px; font-size: 12px; margin-left: 4px;">Limpar</button>
+                <input type="date" id="filter-end-date" onchange="applyFilters(); updateDatePresetsActiveState();">
+                
+                <div class="date-presets" style="display: flex; gap: 6px; margin-left: 8px;">
+                  <button type="button" class="preset-btn" onclick="setDatePreset('today')" style="background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); color: var(--text-muted); padding: 6px 10px; border-radius: 6px; font-size: 11px; cursor: pointer; font-weight: 600; transition: var(--transition);">Hoje</button>
+                  <button type="button" class="preset-btn" onclick="setDatePreset('7d')" style="background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); color: var(--text-muted); padding: 6px 10px; border-radius: 6px; font-size: 11px; cursor: pointer; font-weight: 600; transition: var(--transition);">7D</button>
+                  <button type="button" class="preset-btn" onclick="setDatePreset('30d')" style="background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); color: var(--text-muted); padding: 6px 10px; border-radius: 6px; font-size: 11px; cursor: pointer; font-weight: 600; transition: var(--transition);">30D</button>
+                  <button type="button" class="preset-btn" onclick="setDatePreset('this-month')" style="background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); color: var(--text-muted); padding: 6px 10px; border-radius: 6px; font-size: 11px; cursor: pointer; font-weight: 600; transition: var(--transition);">Este Mês</button>
+                  <button type="button" class="preset-btn" onclick="setDatePreset('all')" style="background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); color: var(--text-muted); padding: 6px 10px; border-radius: 6px; font-size: 11px; cursor: pointer; font-weight: 600; transition: var(--transition);">Total</button>
+                </div>
               </div>
             </div>
 

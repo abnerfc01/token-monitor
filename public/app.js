@@ -43,6 +43,7 @@ async function init() {
     await fetchPrices();
     await fetchData();
     initTiltEffect();
+    updateDatePresetsActiveState('all');
   } catch (err) {
     console.error('Error initializing application:', err);
   } finally {
@@ -743,6 +744,7 @@ function clearDateRange() {
   const endInput = document.getElementById('filter-end-date');
   if (startInput) startInput.value = '';
   if (endInput) endInput.value = '';
+  updateDatePresetsActiveState('all');
   applyFilters();
 }
 
@@ -1716,4 +1718,123 @@ function exportHistoryCSV() {
   link.click();
   document.body.removeChild(link);
   URL.revokeObjectURL(url);
+}
+
+// Set Date Preset (Today, 7D, 30D, This Month, All)
+function setDatePreset(preset) {
+  const startInput = document.getElementById('filter-start-date');
+  const endInput = document.getElementById('filter-end-date');
+  if (!startInput || !endInput) return;
+
+  const now = new Date();
+  
+  // Format Date to YYYY-MM-DD local time
+  const formatDate = (date) => {
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+  };
+
+  let startDateVal = '';
+  let endDateVal = '';
+
+  if (preset === 'today') {
+    startDateVal = formatDate(now);
+    endDateVal = formatDate(now);
+  } else if (preset === '7d') {
+    const past = new Date();
+    past.setDate(now.getDate() - 6); // 7 days including today
+    startDateVal = formatDate(past);
+    endDateVal = formatDate(now);
+  } else if (preset === '30d') {
+    const past = new Date();
+    past.setDate(now.getDate() - 29); // 30 days including today
+    startDateVal = formatDate(past);
+    endDateVal = formatDate(now);
+  } else if (preset === 'this-month') {
+    const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+    startDateVal = formatDate(startOfMonth);
+    endDateVal = formatDate(now);
+  } else if (preset === 'all') {
+    startDateVal = '';
+    endDateVal = '';
+  }
+
+  startInput.value = startDateVal;
+  endInput.value = endDateVal;
+
+  // Update active state of preset buttons
+  updateDatePresetsActiveState(preset);
+  
+  // Apply filters to refresh GUI
+  applyFilters();
+}
+
+// Update the active UI state of preset date buttons
+function updateDatePresetsActiveState(activePreset = null) {
+  const startInput = document.getElementById('filter-start-date');
+  const endInput = document.getElementById('filter-end-date');
+  
+  // Clear active class from all preset buttons
+  document.querySelectorAll('.preset-btn').forEach(btn => {
+    btn.classList.remove('active');
+  });
+
+  if (activePreset) {
+    const btn = Array.from(document.querySelectorAll('.preset-btn')).find(b => {
+      const onclickAttr = b.getAttribute('onclick');
+      return onclickAttr && onclickAttr.includes(`'${activePreset}'`);
+    });
+    if (btn) btn.classList.add('active');
+    return;
+  }
+
+  // If manual date change, check if it matches any preset
+  if (!startInput || !endInput) return;
+  const startVal = startInput.value;
+  const endVal = endInput.value;
+
+  const now = new Date();
+  const formatDate = (date) => {
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+  };
+
+  const todayStr = formatDate(now);
+
+  if (!startVal && !endVal) {
+    const btn = Array.from(document.querySelectorAll('.preset-btn')).find(b => b.getAttribute('onclick').includes("'all'"));
+    if (btn) btn.classList.add('active');
+  } else if (startVal === todayStr && endVal === todayStr) {
+    const btn = Array.from(document.querySelectorAll('.preset-btn')).find(b => b.getAttribute('onclick').includes("'today'"));
+    if (btn) btn.classList.add('active');
+  } else {
+    // 7D check
+    const past7 = new Date();
+    past7.setDate(now.getDate() - 6);
+    const past7Str = formatDate(past7);
+    
+    // 30D check
+    const past30 = new Date();
+    past30.setDate(now.getDate() - 29);
+    const past30Str = formatDate(past30);
+    
+    // This month check
+    const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+    const startOfMonthStr = formatDate(startOfMonth);
+
+    if (startVal === past7Str && endVal === todayStr) {
+      const btn = Array.from(document.querySelectorAll('.preset-btn')).find(b => b.getAttribute('onclick').includes("'7d'"));
+      if (btn) btn.classList.add('active');
+    } else if (startVal === past30Str && endVal === todayStr) {
+      const btn = Array.from(document.querySelectorAll('.preset-btn')).find(b => b.getAttribute('onclick').includes("'30d'"));
+      if (btn) btn.classList.add('active');
+    } else if (startVal === startOfMonthStr && endVal === todayStr) {
+      const btn = Array.from(document.querySelectorAll('.preset-btn')).find(b => b.getAttribute('onclick').includes("'this-month'"));
+      if (btn) btn.classList.add('active');
+    }
+  }
 }

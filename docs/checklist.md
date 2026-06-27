@@ -25,6 +25,7 @@ Este documento serve como um guia de acompanhamento para as tarefas concluídas,
 - [x] **Filtros de Período Customizados (Date Range)**:
   - [x] Adicionados seletores de data (`input[type="date"]`) no painel de filtros globais.
   - [x] Implementada lógica de filtragem integrada que recalcula os KPIs, gráficos e a tabela de histórico de acordo com o intervalo selecionado.
+  - [x] Adicionados botões de atalho de período rápidos (presets para Hoje, 7D, 30D, Este Mês e Total) com sincronização e iluminação visual ativa.
 - [x] **💵 Conversão Tarifária para Real (BRL - R$)**:
   - [x] Exibição do custo total em Reais (R$) no card principal do dashboard.
   - [x] Inclusão do detalhamento correspondente em Dólares (USD) no subtexto (ao lado da contagem de conversas).

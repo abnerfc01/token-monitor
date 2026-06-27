@@ -1120,3 +1120,17 @@ body {
     transform: translate(-40px, 40px) scale(0.95) rotate(360deg);
   }
 }
+
+/* Date Presets Styling */
+.preset-btn:hover {
+  background: rgba(155, 93, 229, 0.15) !important;
+  border-color: var(--primary) !important;
+  color: var(--text-main) !important;
+}
+
+.preset-btn.active {
+  background: rgba(0, 245, 212, 0.2) !important;
+  border-color: var(--secondary) !important;
+  color: var(--secondary) !important;
+  box-shadow: 0 0 10px rgba(0, 245, 212, 0.2);
+}
