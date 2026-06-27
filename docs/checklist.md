@@ -45,8 +45,9 @@ Este documento serve como um guia de acompanhamento para as tarefas concluídas,
   - [ ] Adicionar botões para exportar as tabelas de detalhamento de projetos e histórico de uso como arquivos CSV locais.
 
 ### ⚡ Otimização de Performance
-- [ ] **Cache em Memória no Backend**:
-  - [ ] Salvar os resultados do processamento das bases de dados em cache no Express, recalculando os dados apenas quando o timestamp de última modificação (`mtime`) dos arquivos SQLite no diretório do AIOX sofrer alteração, reduzindo o custo de execução de subprocessos Python.
+- [x] **Cache em Memória no Backend**:
+  - [x] Salvar os resultados do processamento das bases de dados em cache no Express, recalculando os dados apenas quando o timestamp de última modificação (`mtime`) dos arquivos SQLite no diretório do AIOX sofrer alteração, reduzindo o custo de execução de subprocessos Python.
+
 
 ---
 

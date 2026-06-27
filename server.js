@@ -295,50 +295,162 @@ app.post('/api/prices/update-auto', async (req, res) => {
   }
 });
 
-// Run Python script to scan conversations and merge with project configuration
-app.get('/api/usage', (req, res) => {
-  const projects = readJSON(PROJECTS_FILE, []);
-  const prices = readJSON(PRICES_FILE, DEFAULT_PRICES);
+// --- Memory Cache for Usage API ---
+let usageCache = null;
+let lastStateHash = '';
 
-  const pythonScript = path.join(__dirname, 'db_reader.py');
-  
-  exec(`python3 "${pythonScript}"`, (error, stdout, stderr) => {
-    if (error) {
-      console.error(`Execution error: ${error}`);
-      return res.status(500).json({ error: 'Failed to read database', details: stderr });
-    }
+// Helper to expand ~ to home directory in paths
+function expandHome(filepath) {
+  if (filepath.startsWith('~')) {
+    const home = require('os').homedir();
+    return path.join(home, filepath.slice(1));
+  }
+  return filepath;
+}
 
-    try {
-      const dbStats = JSON.parse(stdout);
-      
-      // Auto-discover and register new models in prices.json
-      let pricesUpdated = false;
-      dbStats.forEach(conv => {
-        if (conv.generations && Array.isArray(conv.generations)) {
-          conv.generations.forEach(gen => {
-            const modelName = gen.model;
-            if (modelName && !prices[modelName]) {
-              prices[modelName] = { input: 0.0, output: 0.0, cached: 0.0 };
-              pricesUpdated = true;
-            }
-          });
-        }
-      });
-      if (pricesUpdated) {
-        writeJSON(PRICES_FILE, prices);
+// Function to calculate the current database state hash
+function calculateStateHash() {
+  const home = require('os').homedir();
+  const pathsToCheck = [];
+
+  // 1. Antigravity directories
+  const antigravityDirs = [
+    path.join(home, '.gemini/antigravity-cli/conversations'),
+    path.join(home, '.gemini/antigravity-ide/conversations')
+  ];
+
+  const additionalDirs = process.env.ADDITIONAL_CONVERSATIONS_DIRS || '';
+  if (additionalDirs) {
+    additionalDirs.split(',').forEach(d => {
+      const trimmed = d.trim();
+      if (trimmed) {
+        pathsToCheck.push(expandHome(trimmed));
       }
-      
-      // We will match dbStats workspaces with configured projects.
-      // A dbStat workspace has URI format: "file:///home/<user>/src/resumeai"
-      // We will match it if the workspace path starts with the project path.
-      
-      const usageByProject = {};
-      const unregisteredWorkspaces = new Set();
-      
-      // Initialize projects in our aggregation
-      projects.forEach(p => {
-        usageByProject[p.id] = {
-          project: p,
+    });
+  }
+  
+  antigravityDirs.forEach(d => pathsToCheck.push(d));
+
+  // 2. Claude Code directories
+  const claudeDirs = [
+    path.join(home, '.config/claude-code'),
+    path.join(home, '.claude-code'),
+    path.join(home, '.claude/sessions')
+  ];
+  claudeDirs.forEach(d => pathsToCheck.push(d));
+
+  // 3. Projects file and Prices file
+  pathsToCheck.push(PROJECTS_FILE);
+  pathsToCheck.push(PRICES_FILE);
+
+  // 4. Aider history files in registered projects
+  const projects = readJSON(PROJECTS_FILE, []);
+  projects.forEach(p => {
+    const aiderFile = path.join(p.path, '.aider.chat.history.md');
+    pathsToCheck.push(aiderFile);
+  });
+
+  // Calculate file states (sync checks are fine since mtimes are quick stats)
+  let stateString = '';
+  
+  for (const targetPath of pathsToCheck) {
+    if (!fs.existsSync(targetPath)) continue;
+    
+    try {
+      const stats = fs.statSync(targetPath);
+      if (stats.isDirectory()) {
+        const files = fs.readdirSync(targetPath);
+        stateString += `${targetPath}:${stats.mtimeMs}:${files.length};`;
+        
+        files.forEach(file => {
+          if (file.endsWith('.db') || file.endsWith('.json') || file.endsWith('.jsonl') || file.endsWith('.md')) {
+            const filePath = path.join(targetPath, file);
+            try {
+              const fileStats = fs.statSync(filePath);
+              stateString += `${file}:${fileStats.size}:${fileStats.mtimeMs};`;
+            } catch (_) {}
+          }
+        });
+      } else {
+        stateString += `${targetPath}:${stats.size}:${stats.mtimeMs};`;
+      }
+    } catch (err) {
+      // Ignore read errors
+    }
+  }
+
+  // Create simple hash of the stateString
+  let hash = 0;
+  for (let i = 0; i < stateString.length; i++) {
+    const char = stateString.charCodeAt(i);
+    hash = (hash << 5) - hash + char;
+    hash = hash & hash; // Convert to 32bit integer
+  }
+  return hash.toString();
+}
+
+// Run Python script to scan conversations and merge with project configuration (with cache check)
+app.get('/api/usage', (req, res) => {
+  try {
+    const currentStateHash = calculateStateHash();
+    
+    // Check if cache is valid
+    if (usageCache && currentStateHash === lastStateHash) {
+      // Serve from memory cache!
+      return res.json(usageCache);
+    }
+    
+    // Cache invalid or empty - run Python script
+    const projects = readJSON(PROJECTS_FILE, []);
+    const prices = readJSON(PRICES_FILE, DEFAULT_PRICES);
+    const pythonScript = path.join(__dirname, 'db_reader.py');
+    
+    exec(`python3 "${pythonScript}"`, (error, stdout, stderr) => {
+      if (error) {
+        console.error(`Execution error: ${error}`);
+        return res.status(500).json({ error: 'Failed to read database', details: stderr });
+      }
+
+      try {
+        const dbStats = JSON.parse(stdout);
+        
+        // Auto-discover and register new models in prices.json
+        let pricesUpdated = false;
+        dbStats.forEach(conv => {
+          if (conv.generations && Array.isArray(conv.generations)) {
+            conv.generations.forEach(gen => {
+              const modelName = gen.model;
+              if (modelName && !prices[modelName]) {
+                prices[modelName] = { input: 0.0, output: 0.0, cached: 0.0 };
+                pricesUpdated = true;
+              }
+            });
+          }
+        });
+        if (pricesUpdated) {
+          writeJSON(PRICES_FILE, prices);
+        }
+        
+        const usageByProject = {};
+        const unregisteredWorkspaces = new Set();
+        
+        // Initialize projects in our aggregation
+        projects.forEach(p => {
+          usageByProject[p.id] = {
+            project: p,
+            conversationsCount: 0,
+            stepsCount: 0,
+            inputTokens: 0,
+            outputTokens: 0,
+            cachedTokens: 0,
+            cost: 0,
+            conversations: []
+          };
+        });
+        
+        const otherKey = 'unregistered';
+        usageByProject[otherKey] = {
+          project: { id: 'unregistered', name: 'Outros / Sem Projeto Cadastrado', path: '' },
           conversationsCount: 0,
           stepsCount: 0,
           inputTokens: 0,
@@ -347,131 +459,118 @@ app.get('/api/usage', (req, res) => {
           cost: 0,
           conversations: []
         };
-      });
-      
-      // General workspace / Other
-      const otherKey = 'unregistered';
-      usageByProject[otherKey] = {
-        project: { id: 'unregistered', name: 'Outros / Sem Projeto Cadastrado', path: '' },
-        conversationsCount: 0,
-        stepsCount: 0,
-        inputTokens: 0,
-        outputTokens: 0,
-        cachedTokens: 0,
-        cost: 0,
-        conversations: []
-      };
 
-      dbStats.forEach(conv => {
-        let matchedProjectId = null;
-        let convWorkspacePath = conv.workspace.replace('file://', '');
-        if (convWorkspacePath.endsWith('/') && convWorkspacePath.length > 1) {
-          convWorkspacePath = convWorkspacePath.slice(0, -1);
-        }
+        dbStats.forEach(conv => {
+          let matchedProjectId = null;
+          let convWorkspacePath = conv.workspace.replace('file://', '');
+          if (convWorkspacePath.endsWith('/') && convWorkspacePath.length > 1) {
+            convWorkspacePath = convWorkspacePath.slice(0, -1);
+          }
 
-        // Find best match (longest matching project path)
-        let bestMatchLength = -1;
+          let bestMatchLength = -1;
+          const candidatePaths = [convWorkspacePath];
+          if (conv.referenced_paths && Array.isArray(conv.referenced_paths)) {
+            conv.referenced_paths.forEach(refPath => {
+              candidatePaths.push(refPath);
+            });
+          }
 
-        // Build list of candidate paths from workspace and referenced paths
-        const candidatePaths = [convWorkspacePath];
-        if (conv.referenced_paths && Array.isArray(conv.referenced_paths)) {
-          conv.referenced_paths.forEach(refPath => {
-            candidatePaths.push(refPath);
-          });
-        }
-
-        projects.forEach(p => {
-          candidatePaths.forEach(cPath => {
-            if (cPath === p.path || cPath.startsWith(p.path + '/')) {
-              if (p.path.length > bestMatchLength) {
-                bestMatchLength = p.path.length;
-                matchedProjectId = p.id;
-              }
-            }
-          });
-        });
-
-        // Fallback: If no exact match is found, try matching by base folder name (basename)
-        // to support multi-machine setups where absolute paths differ.
-        if (!matchedProjectId) {
           projects.forEach(p => {
-            const projectBasename = path.basename(p.path).toLowerCase();
-            if (projectBasename) {
-              candidatePaths.forEach(cPath => {
-                const candidateBasename = path.basename(cPath).toLowerCase();
-                if (candidateBasename === projectBasename) {
+            candidatePaths.forEach(cPath => {
+              if (cPath === p.path || cPath.startsWith(p.path + '/')) {
+                if (p.path.length > bestMatchLength) {
+                  bestMatchLength = p.path.length;
                   matchedProjectId = p.id;
                 }
-              });
-            }
+              }
+            });
           });
-        }
 
-        const targetKey = matchedProjectId || otherKey;
-        if (!matchedProjectId) {
-          unregisteredWorkspaces.add(conv.workspace);
-        }
+          if (!matchedProjectId) {
+            projects.forEach(p => {
+              const projectBasename = path.basename(p.path).toLowerCase();
+              if (projectBasename) {
+                candidatePaths.forEach(cPath => {
+                  const candidateBasename = path.basename(cPath).toLowerCase();
+                  if (candidateBasename === projectBasename) {
+                    matchedProjectId = p.id;
+                  }
+                });
+              }
+            });
+          }
 
-        // Calculate cost for this conversation
-        let convCost = 0;
-        let convInput = 0;
-        let convOutput = 0;
-        let convCached = 0;
+          const targetKey = matchedProjectId || otherKey;
+          if (!matchedProjectId) {
+            unregisteredWorkspaces.add(conv.workspace);
+          }
 
-        conv.generations.forEach(gen => {
-          const modelName = gen.model;
-          // Find prices for this model, or fallback to Gemini 3.5 Flash default
-          const modelPrice = prices[modelName] || prices["Gemini 3.5 Flash (Medium)"];
+          let convCost = 0;
+          let convInput = 0;
+          let convOutput = 0;
+          let convCached = 0;
+
+          conv.generations.forEach(gen => {
+            const modelName = gen.model;
+            const modelPrice = prices[modelName] || prices["Gemini 3.5 Flash (Medium)"];
+            
+            const inCost = (gen.input_tokens / 1000000) * modelPrice.input;
+            const outCost = (gen.output_tokens / 1000000) * modelPrice.output;
+            const cachedCost = (gen.cached_tokens / 1000000) * modelPrice.cached;
+
+            const stepCost = inCost + outCost + cachedCost;
+            convCost += stepCost;
+            convInput += gen.input_tokens;
+            convOutput += gen.output_tokens;
+            convCached += gen.cached_tokens;
+          });
+
+          const group = usageByProject[targetKey];
+          group.conversationsCount++;
+          group.stepsCount += conv.generations.length;
+          group.inputTokens += convInput;
+          group.outputTokens += convOutput;
+          group.cachedTokens += convCached;
+          group.cost += convCost;
           
-          const inCost = (gen.input_tokens / 1000000) * modelPrice.input;
-          const outCost = (gen.output_tokens / 1000000) * modelPrice.output;
-          const cachedCost = (gen.cached_tokens / 1000000) * modelPrice.cached;
-
-          const stepCost = inCost + outCost + cachedCost;
-          convCost += stepCost;
-          convInput += gen.input_tokens;
-          convOutput += gen.output_tokens;
-          convCached += gen.cached_tokens;
+          group.conversations.push({
+            conversation_id: conv.conversation_id,
+            workspace: conv.workspace,
+            start_time: conv.start_time,
+            last_modified: conv.last_modified,
+            steps_count: conv.generations.length,
+            input_tokens: convInput,
+            output_tokens: convOutput,
+            cached_tokens: convCached,
+            cost: convCost,
+            generations: conv.generations
+          });
         });
 
-        // Add to project totals
-        const group = usageByProject[targetKey];
-        group.conversationsCount++;
-        group.stepsCount += conv.generations.length;
-        group.inputTokens += convInput;
-        group.outputTokens += convOutput;
-        group.cachedTokens += convCached;
-        group.cost += convCost;
-        
-        group.conversations.push({
-          conversation_id: conv.conversation_id,
-          workspace: conv.workspace,
-          start_time: conv.start_time,
-          last_modified: conv.last_modified,
-          steps_count: conv.generations.length,
-          input_tokens: convInput,
-          output_tokens: convOutput,
-          cached_tokens: convCached,
-          cost: convCost,
-          generations: conv.generations
-        });
-      });
+        if (usageByProject[otherKey].conversationsCount === 0) {
+          delete usageByProject[otherKey];
+        }
 
-      // Filter other project group if empty
-      if (usageByProject[otherKey].conversationsCount === 0) {
-        delete usageByProject[otherKey];
+        const responseData = {
+          byProject: usageByProject,
+          unregisteredWorkspaces: Array.from(unregisteredWorkspaces),
+          rawStats: dbStats
+        };
+
+        // Update memory cache
+        usageCache = responseData;
+        lastStateHash = currentStateHash;
+
+        res.json(responseData);
+      } catch (e) {
+        console.error('Failed to aggregate usage stats:', e);
+        res.status(500).json({ error: 'Failed to process database stats', details: e.message });
       }
-
-      res.json({
-        byProject: usageByProject,
-        unregisteredWorkspaces: Array.from(unregisteredWorkspaces),
-        rawStats: dbStats
-      });
-    } catch (e) {
-      console.error('Failed to aggregate usage stats:', e);
-      res.status(500).json({ error: 'Failed to process database stats', details: e.message });
-    }
-  });
+    });
+  } catch (err) {
+    console.error('Error in /api/usage cache checking:', err);
+    res.status(500).json({ error: 'Erro interno ao processar cache de estatísticas.' });
+  }
 });
 
 app.listen(PORT, '0.0.0.0', () => {
