@@ -25,6 +25,10 @@ Este documento serve como um guia de acompanhamento para as tarefas concluídas,
 - [x] **Filtros de Período Customizados (Date Range)**:
   - [x] Adicionados seletores de data (`input[type="date"]`) no painel de filtros globais.
   - [x] Implementada lógica de filtragem integrada que recalcula os KPIs, gráficos e a tabela de histórico de acordo com o intervalo selecionado.
+- [x] **💵 Conversão Tarifária para Real (BRL - R$)**:
+  - [x] Exibição do custo total em Reais (R$) no card principal do dashboard.
+  - [x] Inclusão do detalhamento correspondente em Dólares (USD) no subtexto (ao lado da contagem de conversas).
+  - [x] Campo configurável no menu de preços para definição manual do câmbio e botão para atualização automática de cotação via AwesomeAPI.
 
 ---
 
@@ -37,8 +41,6 @@ Este documento serve como um guia de acompanhamento para as tarefas concluídas,
   - [ ] Validar e aprimorar a extração de dados nos históricos de chat do Aider CLI (`.aider.chat.history.md`).
 
 ### 📊 Recursos do Dashboard (Frontend)
-- [ ] **💵 Conversão Tarifária para Real (BRL - R$)**:
-  - [ ] Adicionar suporte a um fator de conversão de câmbio (USD/BRL) configurável na interface de preços, permitindo exibir todos os custos consolidados diretamente em Reais (R$).
 - [ ] **📥 Exportação de Relatórios (CSV)**:
   - [ ] Adicionar botões para exportar as tabelas de detalhamento de projetos e histórico de uso como arquivos CSV locais.
 

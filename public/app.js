@@ -185,8 +185,11 @@ function updateKPIs() {
     }
   });
   
-  document.getElementById('kpi-total-cost').innerText = `$${totalCost.toFixed(3)}`;
-  document.getElementById('kpi-cost-subtext').innerText = `${totalConversations} conversações correspondentes`;
+  const exchangeRate = prices._usd_brl !== undefined ? prices._usd_brl : 5.45;
+  const totalCostBRL = totalCost * exchangeRate;
+  
+  document.getElementById('kpi-total-cost').innerText = `R$ ${totalCostBRL.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+  document.getElementById('kpi-cost-subtext').innerText = `${totalConversations} conversas | U$ ${totalCost.toFixed(3)}`;
   
   document.getElementById('kpi-input-tokens').innerText = formatNumber(totalInput);
   document.getElementById('kpi-input-subtext').innerText = `Valor bruto: $${((totalInput / 1000000) * 0.075).toFixed(3)} (Base)`;
@@ -819,18 +822,26 @@ function renderPricesTable() {
   const tbody = document.querySelector('#prices-edit-table tbody');
   tbody.innerHTML = '';
   
+  // Populate USD/BRL input
+  const usdBrlInput = document.getElementById('usd-brl-input');
+  if (usdBrlInput) {
+    usdBrlInput.value = prices._usd_brl !== undefined ? prices._usd_brl : 5.45;
+  }
+  
   Object.entries(prices).forEach(([modelName, values]) => {
+    if (modelName.startsWith('_')) return; // Skip config fields
+    
     const tr = document.createElement('tr');
     tr.innerHTML = `
       <td style="font-weight: 600;">${modelName}</td>
       <td>
-        <input type="number" step="0.001" value="${values.input}" data-model="${modelName}" data-type="input" required>
+        <input type="number" step="0.00001" value="${values.input}" data-model="${modelName}" data-type="input" required>
       </td>
       <td>
-        <input type="number" step="0.001" value="${values.cached}" data-model="${modelName}" data-type="cached" required>
+        <input type="number" step="0.00001" value="${values.cached}" data-model="${modelName}" data-type="cached" required>
       </td>
       <td>
-        <input type="number" step="0.001" value="${values.output}" data-model="${modelName}" data-type="output" required>
+        <input type="number" step="0.00001" value="${values.output}" data-model="${modelName}" data-type="output" required>
       </td>
     `;
     tbody.appendChild(tr);
@@ -846,6 +857,7 @@ async function savePrices(e) {
   
   inputs.forEach(input => {
     const model = input.getAttribute('data-model');
+    if (model && model.startsWith('_')) return;
     const type = input.getAttribute('data-type');
     const val = parseFloat(input.value);
     
@@ -854,6 +866,12 @@ async function savePrices(e) {
     }
     newPrices[model][type] = val;
   });
+  
+  // Save USD/BRL exchange rate
+  const usdBrlInput = document.getElementById('usd-brl-input');
+  if (usdBrlInput) {
+    newPrices._usd_brl = parseFloat(usdBrlInput.value) || 5.45;
+  }
   
   showLoading(true);
   try {
@@ -915,10 +933,35 @@ async function updatePricesAutomatically() {
 }
 
 // Reset Prices to System Defaults
+// Automatically update USD/BRL exchange rate from awesomeapi
+async function updateUSDBRLAutomatically() {
+  showLoading(true);
+  try {
+    const res = await fetch('/api/prices/exchange-rate-auto');
+    if (res.ok) {
+      const data = await res.json();
+      const input = document.getElementById('usd-brl-input');
+      if (input) {
+        input.value = data.rate.toFixed(4);
+      }
+      await systemAlert('Sucesso', `Cotação do Dólar obtida com sucesso: R$ ${data.rate.toFixed(4)}!\nClique em "Salvar Alterações de Preço" para persistir o valor.`);
+    } else {
+      const err = await res.json();
+      await systemAlert('Erro', `Erro ao buscar cotação: ${err.error || 'Erro desconhecido'}`);
+    }
+  } catch (err) {
+    console.error(err);
+    await systemAlert('Erro', 'Erro de conexão ao tentar buscar cotação do Dólar.');
+  } finally {
+    showLoading(false);
+  }
+}
+
 async function resetPricesToDefault() {
   if (!await systemConfirm('Restaurar Padrões', 'Deseja restaurar as tarifas padrão do sistema?')) return;
   
   const defaultPrices = {
+    "_usd_brl": 5.45,
     "Gemini 3.5 Flash (Medium)": { "input": 0.075, "output": 0.30, "cached": 0.01875 },
     "Gemini 3.5 Flash (High)": { "input": 0.075, "output": 0.30, "cached": 0.01875 },
     "Gemini 3.5 Flash (Low)": { "input": 0.075, "output": 0.30, "cached": 0.01875 },

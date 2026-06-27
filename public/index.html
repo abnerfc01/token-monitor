@@ -280,6 +280,20 @@
 
       <!-- Tab Content: Cost Configuration -->
       <section id="tab-prices" class="tab-content">
+        <div class="form-container glass full-width" style="margin-bottom: 24px;">
+          <h3>Conversão de Moeda (Câmbio USD/BRL)</h3>
+          <p class="section-desc">Defina a cotação do Dólar para converter a estimativa de custos para Real (R$).</p>
+          <div style="display: flex; gap: 16px; align-items: flex-end; flex-wrap: wrap;">
+            <div class="form-group" style="margin-bottom: 0; flex: 1; max-width: 250px;">
+              <label for="usd-brl-input">Valor do Dólar em Reais (R$):</label>
+              <input type="number" step="0.0001" id="usd-brl-input" required style="padding: 10px 14px; font-weight: 600;">
+            </div>
+            <button type="button" class="btn btn-primary" onclick="updateUSDBRLAutomatically()" style="background: linear-gradient(135deg, var(--secondary) 0%, var(--accent-blue) 100%); color: var(--text-dark); box-shadow: 0 4px 15px rgba(0, 245, 212, 0.3); height: 42px;">
+              ⚡ Obter Cotação Atual
+            </button>
+          </div>
+        </div>
+
         <div class="form-container glass full-width">
           <h3>Preços dos Modelos por Milhão de Tokens (USD)</h3>
           <p class="section-desc">Defina as tarifas de cada modelo de IA para calcular os custos corretos. Os valores padrão foram preenchidos.</p>

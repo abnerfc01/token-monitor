@@ -38,6 +38,7 @@ const PRICES_FILE = path.join(__dirname, 'prices.json');
 
 // Default model prices per 1 Million tokens
 const DEFAULT_PRICES = {
+  "_usd_brl": 5.45,
   "Gemini 3.5 Flash (Medium)": { "input": 0.075, "output": 0.30, "cached": 0.01875 },
   "Gemini 3.5 Flash (High)": { "input": 0.075, "output": 0.30, "cached": 0.01875 },
   "Gemini 3.5 Flash (Low)": { "input": 0.075, "output": 0.30, "cached": 0.01875 },
@@ -129,6 +130,43 @@ app.delete('/api/projects/:id', (req, res) => {
 
   writeJSON(PROJECTS_FILE, filtered);
   res.json({ success: true });
+});
+
+// Helper: Fetch exchange rate from AwesomeAPI
+function fetchExchangeRate() {
+  return new Promise((resolve, reject) => {
+    https.get('https://economia.awesomeapi.com.br/json/last/USD-BRL', (res) => {
+      if (res.statusCode !== 200) {
+        reject(new Error(`Failed to fetch exchange rate: HTTP ${res.statusCode}`));
+        return;
+      }
+      let body = '';
+      res.on('data', (chunk) => body += chunk);
+      res.on('end', () => {
+        try {
+          const data = JSON.parse(body);
+          if (data && data.USDBRL && data.USDBRL.bid) {
+            resolve(parseFloat(data.USDBRL.bid));
+          } else {
+            reject(new Error('Formato de resposta inválido da API de câmbio.'));
+          }
+        } catch (e) {
+          reject(e);
+        }
+      });
+    }).on('error', reject);
+  });
+}
+
+// Route: Get current exchange rate automatically from the web
+app.get('/api/prices/exchange-rate-auto', async (req, res) => {
+  try {
+    const rate = await fetchExchangeRate();
+    res.json({ success: true, rate });
+  } catch (err) {
+    console.error('Error fetching exchange rate:', err);
+    res.status(500).json({ error: 'Erro ao obter taxa de câmbio automaticamente da internet.', details: err.message });
+  }
 });
 
 // Cost Config CRUD
