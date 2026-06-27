@@ -1581,3 +1581,139 @@ function animateTabEntrance(tabId) {
     });
   }
 }
+
+// Export Projects Detailed Table to CSV
+function exportProjectsCSV() {
+  if (!usageData || !usageData.byProject) {
+    systemAlert('Erro', 'Não há dados disponíveis para exportação.');
+    return;
+  }
+
+  const targetProjectIds = selectedProjectIds.length > 0 
+    ? selectedProjectIds 
+    : Object.keys(usageData.byProject);
+
+  let csvContent = "Projeto,Caminho Local,Modelos,N_Conversas,Tokens Entrada,Tokens Cache,Tokens Saida,Custo Estimado (USD)\r\n";
+
+  const startEpoch = getStartEpoch();
+  const endEpoch = getEndEpoch();
+
+  targetProjectIds.forEach(key => {
+    const group = usageData.byProject[key];
+    if (!group) return;
+
+    const isUnregistered = key === 'unregistered';
+    const projName = group.project.name;
+    const projPath = isUnregistered ? 'N/A' : group.project.path;
+
+    let projectCost = 0;
+    let projectInput = 0;
+    let projectOutput = 0;
+    let projectCached = 0;
+    let matchedConvsCount = 0;
+    const uniqueModels = new Set();
+
+    group.conversations.forEach(conv => {
+      let convMatched = false;
+      conv.generations.forEach(gen => {
+        const matchesModel = selectedModels.length === 0 || selectedModels.includes(gen.model);
+        const matchesDate = (!startEpoch || gen.timestamp >= startEpoch) && (!endEpoch || gen.timestamp <= endEpoch);
+        if (matchesModel && matchesDate) {
+          convMatched = true;
+          if (gen.model) uniqueModels.add(gen.model);
+          
+          const modelPrice = prices[gen.model] || prices["Gemini 3.5 Flash (Medium)"];
+          const inCost = (gen.input_tokens / 1000000) * modelPrice.input;
+          const outCost = (gen.output_tokens / 1000000) * modelPrice.output;
+          const cachedCost = (gen.cached_tokens / 1000000) * modelPrice.cached;
+          
+          projectCost += (inCost + outCost + cachedCost);
+          projectInput += gen.input_tokens;
+          projectOutput += gen.output_tokens;
+          projectCached += gen.cached_tokens;
+        }
+      });
+      if (convMatched) {
+        matchedConvsCount++;
+      }
+    });
+
+    if (selectedModels.length > 0 && matchedConvsCount === 0) return;
+
+    const modelsList = uniqueModels.size > 0 ? Array.from(uniqueModels).join(' | ') : 'Nenhum';
+
+    const escapedName = `"${projName.replace(/"/g, '""')}"`;
+    const escapedPath = `"${projPath.replace(/"/g, '""')}"`;
+    const escapedModels = `"${modelsList.replace(/"/g, '""')}"`;
+
+    csvContent += `${escapedName},${escapedPath},${escapedModels},${matchedConvsCount},${projectInput},${projectCached},${projectOutput},${projectCost.toFixed(3)}\r\n`;
+  });
+
+  // Download logic with UTF-8 BOM for Excel compatibility
+  const blob = new Blob([new Uint8Array([0xEF, 0xBB, 0xBF]), csvContent], { type: "text/csv;charset=utf-8;" });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement("a");
+  link.setAttribute("href", url);
+  link.setAttribute("download", `token_monitor_projetos_${new Date().toISOString().slice(0,10)}.csv`);
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+  URL.revokeObjectURL(url);
+}
+
+// Export History Table to CSV
+function exportHistoryCSV() {
+  if (!usageData || !usageData.byProject) {
+    systemAlert('Erro', 'Não há dados disponíveis para exportação.');
+    return;
+  }
+
+  const filterVal = document.getElementById('filter-project').value;
+  let list = [];
+  
+  const startEpoch = getStartEpoch();
+  const endEpoch = getEndEpoch();
+  
+  Object.entries(usageData.byProject).forEach(([key, group]) => {
+    if (filterVal === 'all' || filterVal === key) {
+      group.conversations.forEach(conv => {
+        const matchesDate = (!startEpoch || conv.last_modified >= startEpoch) && (!endEpoch || conv.last_modified <= endEpoch);
+        if (matchesDate) {
+          list.push({
+            ...conv,
+            projectName: group.project.name
+          });
+        }
+      });
+    }
+  });
+  
+  list.sort((a, b) => b.last_modified - a.last_modified);
+
+  if (list.length === 0) {
+    systemAlert('Erro', 'Nenhuma conversa encontrada para os filtros ativos.');
+    return;
+  }
+
+  let csvContent = "ID Conversa,Projeto,Ultima Modificacao,Passos,Tokens Entrada,Tokens Cache,Tokens Saida,Custo Total (USD)\r\n";
+
+  list.forEach(c => {
+    const dateStr = new Date(c.last_modified * 1000).toLocaleString('pt-BR');
+    const escapedId = `"${c.conversation_id.replace(/"/g, '""')}"`;
+    const escapedProj = `"${c.projectName.replace(/"/g, '""')}"`;
+    const escapedDate = `"${dateStr.replace(/"/g, '""')}"`;
+
+    csvContent += `${escapedId},${escapedProj},${escapedDate},${c.steps_count},${c.input_tokens},${c.cached_tokens},${c.output_tokens},${c.cost.toFixed(3)}\r\n`;
+  });
+
+  // Download logic with UTF-8 BOM for Excel compatibility
+  const blob = new Blob([new Uint8Array([0xEF, 0xBB, 0xBF]), csvContent], { type: "text/csv;charset=utf-8;" });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement("a");
+  link.setAttribute("href", url);
+  link.setAttribute("download", `token_monitor_historico_${new Date().toISOString().slice(0,10)}.csv`);
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+  URL.revokeObjectURL(url);
+}

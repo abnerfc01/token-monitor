@@ -41,8 +41,8 @@ Este documento serve como um guia de acompanhamento para as tarefas concluídas,
   - [x] Validar e aprimorar a extração de dados nos históricos de chat do Aider CLI (`.aider.chat.history.md`).
 
 ### 📊 Recursos do Dashboard (Frontend)
-- [ ] **📥 Exportação de Relatórios (CSV)**:
-  - [ ] Adicionar botões para exportar as tabelas de detalhamento de projetos e histórico de uso como arquivos CSV locais.
+- [x] **📥 Exportação de Relatórios (CSV)**:
+  - [x] Adicionar botões para exportar as tabelas de detalhamento de projetos e histórico de uso como arquivos CSV locais.
 
 ### ⚡ Otimização de Performance
 - [x] **Cache em Memória no Backend**:

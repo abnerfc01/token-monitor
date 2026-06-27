@@ -223,7 +223,12 @@
 
         <!-- Projects Summary Table -->
         <div class="table-container glass">
-          <h3>Detalhamento por Projeto</h3>
+          <div class="table-header-filters" style="margin-bottom: 20px; align-items: center;">
+            <h3 style="margin-bottom: 0;">Detalhamento por Projeto</h3>
+            <button class="btn btn-secondary" onclick="exportProjectsCSV()" style="padding: 8px 16px; font-size: 13px;">
+              📥 Exportar CSV
+            </button>
+          </div>
           <table class="data-table" id="projects-summary-table">
             <thead>
               <tr>
@@ -337,11 +342,16 @@
         <div class="table-container glass full-width">
           <div class="table-header-filters">
             <h3>Histórico de Conversas e Interações</h3>
-            <div class="filter-group">
-              <label for="filter-project">Projeto:</label>
-              <select id="filter-project" onchange="applyFilters()">
-                <option value="all">Todos</option>
-              </select>
+            <div class="filter-group" style="gap: 16px; align-items: center;">
+              <div class="filter-group">
+                <label for="filter-project">Projeto:</label>
+                <select id="filter-project" onchange="applyFilters()">
+                  <option value="all">Todos</option>
+                </select>
+              </div>
+              <button class="btn btn-secondary" onclick="exportHistoryCSV()" style="padding: 8px 16px; font-size: 13px;">
+                📥 Exportar CSV
+              </button>
             </div>
           </div>
           
