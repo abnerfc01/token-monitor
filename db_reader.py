@@ -435,36 +435,63 @@ class AiderAdapter(BaseAdapter):
                 
                 with open(f, 'r', encoding='utf-8') as file_obj:
                     content = file_obj.read()
-                    
-                turns = content.split('####')
-                steps_count = max(0, len(turns) - 1)
                 
-                char_count = len(content)
-                estimated_tokens = char_count // 4
+                # 1. Dynamically detect model from the file contents (using regex)
+                model_name = "Claude Sonnet 4.6 (Thinking)" # default modern fallback
+                model_match = re.search(r'(?:aider|using|model)\s+([a-zA-Z0-9_\-\./]+)', content, re.IGNORECASE)
+                if model_match:
+                    extracted = model_match.group(1).lower()
+                    if 'sonnet' in extracted or '3-5' in extracted:
+                        model_name = "Claude Sonnet 4.6 (Thinking)"
+                    elif 'opus' in extracted:
+                        model_name = "Claude Opus 4.6 (Thinking)"
+                    elif 'gpt-4' in extracted:
+                        model_name = "GPT-OSS 120B (Medium)"
+                    elif 'gemini' in extracted:
+                        model_name = "Gemini 3.5 Flash (Medium)"
                 
+                # 2. Split history by '####' to extract turn text size
+                sections = content.split('####')
                 generations = []
-                if steps_count > 0:
-                    tokens_per_step = estimated_tokens // steps_count
-                    for idx in range(steps_count):
-                        generations.append({
-                            "model": "Claude 3.5 Sonnet",
-                            "model_code": "claude-3-5-sonnet",
-                            "input_tokens": int(tokens_per_step * 0.7),
-                            "output_tokens": int(tokens_per_step * 0.3),
-                            "cached_tokens": 0,
-                            "timestamp": mtime
-                        })
                 
-                results.append({
-                    "conversation_id": f"aider-{abs(hash(f))}",
-                    "workspace": workspace_uri,
-                    "start_time": mtime - (steps_count * 60),
-                    "last_modified": mtime,
-                    "file_size": file_size,
-                    "generations": generations,
-                    "steps_count": steps_count,
-                    "referenced_paths": [f]
-                })
+                # The first section sections[0] is the header. 
+                # Prompts and responses start at index 1 and alternate.
+                steps_count = 0
+                for i in range(1, len(sections), 2):
+                    input_text = sections[i].strip() if i < len(sections) else ""
+                    output_text = sections[i+1].strip() if i+1 < len(sections) else ""
+                    
+                    if not input_text and not output_text:
+                        continue
+                        
+                    # Estimate tokens (approx. 4 characters per token)
+                    in_t = max(1, len(input_text) // 4)
+                    out_t = max(1, len(output_text) // 4)
+                    
+                    # Distribute timestamps backward from mtime
+                    step_ts = mtime - ((len(sections) - i) * 60)
+                    
+                    generations.append({
+                        "model": model_name,
+                        "model_code": model_name.lower().replace(' ', '-'),
+                        "input_tokens": in_t,
+                        "output_tokens": out_t,
+                        "cached_tokens": 0,
+                        "timestamp": step_ts
+                    })
+                    steps_count += 1
+                
+                if generations:
+                    results.append({
+                        "conversation_id": f"aider-{abs(hash(f))}",
+                        "workspace": workspace_uri,
+                        "start_time": generations[0]["timestamp"],
+                        "last_modified": mtime,
+                        "file_size": file_size,
+                        "generations": generations,
+                        "steps_count": steps_count,
+                        "referenced_paths": [f]
+                    })
             except Exception as e:
                 sys.stderr.write(f"Error parsing Aider history {f}: {str(e)}\n")
         return results
