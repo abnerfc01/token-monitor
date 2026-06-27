@@ -249,7 +249,109 @@ class ClaudeCodeAdapter(BaseAdapter):
         ]
 
     def get_stats(self):
+        import urllib.parse
         results = []
+        
+        # 1. Search for JSONL files under ~/.claude/projects/*/sessions/
+        home_dir = os.path.expanduser('~')
+        projects_pattern = os.path.join(home_dir, '.claude/projects/*/sessions/*.jsonl')
+        jsonl_files = glob.glob(projects_pattern)
+        
+        for f in jsonl_files:
+            try:
+                mtime = int(os.path.getmtime(f))
+                file_size = os.path.getsize(f)
+                session_id = os.path.basename(f).replace('.jsonl', '')
+                
+                # Reconstruct workspace path from the parent-parent directory
+                # Structure: ~/.claude/projects/<url-encoded-path>/sessions/<session-id>.jsonl
+                project_folder = os.path.basename(os.path.dirname(os.path.dirname(f)))
+                workspace = urllib.parse.unquote(project_folder)
+                
+                if not workspace.startswith('file://') and not workspace.startswith('/'):
+                    if project_folder.startswith('_'):
+                        workspace = project_folder.replace('_', '/')
+                    if not workspace.startswith('/'):
+                        workspace = '/' + workspace
+                
+                if workspace.startswith('/') and not workspace.startswith('file://'):
+                    workspace = f"file://{workspace}"
+                
+                generations = []
+                
+                with open(f, 'r', encoding='utf-8') as file_obj:
+                    for line in file_obj:
+                        line = line.strip()
+                        if not line:
+                            continue
+                        try:
+                            event = json.loads(line)
+                            model = event.get('model') or event.get('model_name')
+                            if not model and 'request' in event and isinstance(event['request'], dict):
+                                model = event['request'].get('model')
+                            if not model:
+                                model = "Claude 3.5 Sonnet"
+                                
+                            ts = event.get('timestamp') or event.get('created') or event.get('time')
+                            if isinstance(ts, str):
+                                try:
+                                    from datetime import datetime
+                                    ts = int(datetime.fromisoformat(ts.replace('Z', '+00:00')).timestamp())
+                                except Exception:
+                                    ts = mtime
+                            if not ts or not isinstance(ts, (int, float)):
+                                ts = mtime
+                                
+                            in_t = 0
+                            out_t = 0
+                            cached_t = 0
+                            
+                            usage = event.get('usage')
+                            if not usage and 'response' in event and isinstance(event['response'], dict):
+                                usage = event['response'].get('usage')
+                                
+                            if isinstance(usage, dict):
+                                in_t = usage.get('input_tokens') or usage.get('prompt_tokens') or 0
+                                out_t = usage.get('output_tokens') or usage.get('completion_tokens') or 0
+                                cached_t = usage.get('cache_read_input_tokens') or usage.get('cache_read') or 0
+                            else:
+                                in_t = event.get('input_tokens') or event.get('prompt_tokens') or 0
+                                out_t = event.get('output_tokens') or event.get('completion_tokens') or 0
+                                cached_t = event.get('cache_read_input_tokens') or event.get('cached_tokens') or 0
+                            
+                            if in_t > 0 or out_t > 0:
+                                generations.append({
+                                    "model": model,
+                                    "model_code": model.lower().replace(' ', '-'),
+                                    "input_tokens": int(in_t),
+                                    "output_tokens": int(out_t),
+                                    "cached_tokens": int(cached_t),
+                                    "timestamp": int(ts)
+                                })
+                        except Exception:
+                            pass
+                            
+                if generations:
+                    start_time = min(g['timestamp'] for g in generations)
+                    last_modified = max(g['timestamp'] for g in generations)
+                else:
+                    start_time = mtime
+                    last_modified = mtime
+                    
+                results.append({
+                    "conversation_id": f"claude-code-{session_id}",
+                    "workspace": workspace,
+                    "start_time": start_time,
+                    "last_modified": last_modified,
+                    "file_size": file_size,
+                    "generations": generations,
+                    "steps_count": len(generations),
+                    "referenced_paths": [f]
+                })
+            except Exception as e:
+                sys.stderr.write(f"Error parsing Claude Code JSONL {f}: {str(e)}\n")
+
+        # 2. Keep the legacy/additional search paths fallback for JSON sessions (as in the original structure)
         for base_path in self.search_paths:
             if not os.path.exists(base_path):
                 continue
@@ -257,12 +359,50 @@ class ClaudeCodeAdapter(BaseAdapter):
             json_files = glob.glob(os.path.join(base_path, '*.json'))
             for f in json_files:
                 try:
+                    mtime = int(os.path.getmtime(f))
+                    file_size = os.path.getsize(f)
+                    session_id = os.path.basename(f).replace('.json', '')
+                    
                     with open(f, 'r', encoding='utf-8') as file_obj:
                         data = json.load(file_obj)
-                        if isinstance(data, dict) and "history" in data:
-                            pass
+                        
+                    if isinstance(data, dict) and "history" in data:
+                        generations = []
+                        history = data["history"]
+                        for event in history:
+                            if not isinstance(event, dict):
+                                continue
+                            model = event.get('model', 'Claude 3.5 Sonnet')
+                            usage = event.get('usage', {})
+                            in_t = usage.get('input_tokens', 0)
+                            out_t = usage.get('output_tokens', 0)
+                            cached_t = usage.get('cache_read_input_tokens', 0)
+                            ts = event.get('timestamp', mtime)
+                            
+                            if in_t > 0 or out_t > 0:
+                                generations.append({
+                                    "model": model,
+                                    "model_code": model.lower().replace(' ', '-'),
+                                    "input_tokens": int(in_t),
+                                    "output_tokens": int(out_t),
+                                    "cached_tokens": int(cached_t),
+                                    "timestamp": int(ts)
+                                })
+                                
+                        if generations:
+                            results.append({
+                                "conversation_id": f"claude-code-{session_id}",
+                                "workspace": f"file://{home_dir}",
+                                "start_time": min(g['timestamp'] for g in generations),
+                                "last_modified": max(g['timestamp'] for g in generations),
+                                "file_size": file_size,
+                                "generations": generations,
+                                "steps_count": len(generations),
+                                "referenced_paths": [f]
+                            })
                 except Exception as e:
-                    sys.stderr.write(f"Error parsing Claude Code JSON {f}: {str(e)}\n")
+                    sys.stderr.write(f"Error parsing Claude Code legacy JSON {f}: {str(e)}\n")
+                    
         return results
 
 

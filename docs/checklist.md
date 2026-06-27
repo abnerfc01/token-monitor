@@ -35,8 +35,8 @@ Este documento serve como um guia de acompanhamento para as tarefas concluídas,
 ## 🔮 2. Próximos Passos & Sugestões de Melhorias
 
 ### 🤖 Adaptadores e Fontes de Dados
-- [ ] **Implementação do `ClaudeCodeAdapter`**:
-  - [ ] Implementar a lógica real no método `get_stats()` do [db_reader.py](file:///home/abner/code/token-monitor/db_reader.py#L238-L266) para ler os históricos do Claude Code salvos no formato `.jsonl` em `~/.claude/projects/<url-encoded-path>/sessions/`.
+- [x] **Implementação do `ClaudeCodeAdapter`**:
+  - [x] Implementar a lógica real no método `get_stats()` do [db_reader.py](file:///home/abner/code/token-monitor/db_reader.py#L238-L266) para ler os históricos do Claude Code salvos no formato `.jsonl` em `~/.claude/projects/<url-encoded-path>/sessions/`.
 - [ ] **Mapeamento de Histórico do Aider**:
   - [ ] Validar e aprimorar a extração de dados nos históricos de chat do Aider CLI (`.aider.chat.history.md`).
 
